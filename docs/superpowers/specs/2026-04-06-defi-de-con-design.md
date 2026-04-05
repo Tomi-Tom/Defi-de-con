@@ -26,6 +26,7 @@ Extension of `auth.users`.
 | `is_admin` | boolean | Default false |
 | `points_total` | integer | Denormalized total, default 0 |
 | `created_at` | timestamptz | |
+| `updated_at` | timestamptz | Auto-set on UPDATE via trigger |
 
 ### `challenges`
 Challenges created by admin.
@@ -36,13 +37,14 @@ Challenges created by admin.
 | `title` | text | |
 | `description` | text | |
 | `start_date` | date | |
-| `end_date` | date | |
-| `duration_days` | integer | |
+| `end_date` | date | Derived: `start_date + duration_days` |
+| `duration_days` | integer | Source of truth for length |
 | `status` | text | `'draft'`, `'active'`, `'completed'` |
 | `cover_image_url` | text | Nullable |
 | `upload_config` | jsonb | Allowed types, max size per challenge |
 | `created_by` | uuid (FK → profiles) | |
 | `created_at` | timestamptz | |
+| `updated_at` | timestamptz | Auto-set on UPDATE via trigger |
 
 ### `challenge_fields`
 Custom fields defined by admin per challenge.
@@ -72,6 +74,8 @@ User enrollments in challenges.
 | `points_earned` | integer | Denormalized, default 0 |
 
 Unique constraint on `(challenge_id, user_id)`.
+
+**Leave/rejoin behavior:** A user can leave a challenge (row deleted). Their `daily_entries` and `entry_values` are preserved (orphaned but readable by admin). Points already earned are kept in `points_log` and `profiles.points_total`. If the user rejoins, a new `challenge_participants` row is created with streak reset to 0. Past entries are not re-linked.
 
 ### `daily_entries`
 One entry per user per challenge per day.
@@ -122,6 +126,23 @@ Badges earned by users.
 | `challenge_id` | uuid (FK → challenges) | Nullable |
 | `earned_at` | timestamptz | |
 
+Unique constraint on `(user_id, badge_id, COALESCE(challenge_id, '00000000-0000-0000-0000-000000000000'))` to prevent duplicate badge awards. Badges are never revoked.
+
+### `points_log`
+Audit trail for all point transactions. Source of truth for recalculation.
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | uuid | PK |
+| `user_id` | uuid (FK → profiles) | |
+| `challenge_id` | uuid (FK → challenges) | |
+| `entry_id` | uuid (FK → daily_entries) | Nullable |
+| `action` | text | `'daily_entry'`, `'streak_3'`, `'streak_7'`, `'streak_14'`, `'streak_30'`, `'first_entry'` |
+| `points` | integer | |
+| `created_at` | timestamptz | |
+
+Denormalized totals in `profiles.points_total` and `challenge_participants.points_earned` can be recalculated from this table if needed. The Server Action checks for existing `points_log` entries to prevent duplicate bonus awards (e.g., same streak milestone awarded twice).
+
 ### `motivational_quotes`
 Quotes pool.
 
@@ -169,7 +190,26 @@ Quotes pool.
 | 30-day streak (full challenge) | +100 |
 | First entry on a challenge | +5 |
 
-Points are calculated in the Server Action on entry submission. Totals are denormalized into `challenge_participants.points_earned` and `profiles.points_total`.
+Points are calculated in the Server Action on entry submission. Totals are denormalized into `challenge_participants.points_earned` and `profiles.points_total`. All transactions are logged in `points_log` for audit and recalculation.
+
+### Streak Rules
+
+- **Timezone:** All dates are based on UTC. `entry_date` is a UTC date.
+- **Streak increment:** On entry submission, if the user has an entry for `entry_date - 1 day`, increment `current_streak`. Otherwise, reset `current_streak` to 1.
+- **Streak reset:** No cron job needed. The streak is evaluated on each submission. If a user misses a day and submits the next day, the gap is detected and the streak resets to 1.
+- **`best_streak`:** Updated to `MAX(current_streak, best_streak)` on each submission.
+- **Streak bonuses:** Awarded when `current_streak` reaches exactly 3, 7, 14, or 30. The `points_log` table is checked to prevent duplicate bonus awards for the same milestone on the same challenge.
+
+### Challenge Status Transitions
+
+```
+draft → active → completed
+```
+
+- **draft → active:** Manual (admin clicks "Publier"). Users cannot join a draft challenge.
+- **active → completed:** Automatic when `end_date` is reached. Checked on page load (lazy evaluation). A daily Vercel Cron job also runs to transition overdue challenges and evaluate "Podium" badges for completed challenges.
+- **completed → active:** Not allowed. A completed challenge is final.
+- **draft → deleted:** Admin can delete a draft with no participants. Not a status — actual row deletion.
 
 ## Badges
 
@@ -215,8 +255,9 @@ Admin can create custom badges from the admin panel. Badge checks run after each
 - Badge unlock: scale + neon green glow animation
 
 ### Motivational Quotes
-- Dashboard: daily quote block, rotates every 24h
+- Dashboard: daily quote, random per-user per-day (seeded by `hash(user_id + date)`), changes at midnight UTC
 - Contextual: random message from matching context pool on each action
+- Fallback: if no quote exists for a specific context, fall back to the `'daily'` pool
 
 ## Design Direction
 
@@ -239,8 +280,9 @@ Admin can create custom badges from the admin panel. Badge checks run after each
 | `challenges` | All | Admin only | Admin only | Admin only |
 | `challenge_fields` | All | Admin only | Admin only | Admin only |
 | `challenge_participants` | All (leaderboard) | Authenticated (self) | Owner only | Owner only |
-| `daily_entries` | Challenge participants | Owner only | Owner only (same day) | Never |
-| `entry_values` | Challenge participants | Owner only | Owner only (same day) | Never |
+| `daily_entries` | Challenge participants | Owner only | Owner only (same day) | Admin only |
+| `entry_values` | Challenge participants | Owner only | Owner only (same day) | Admin only |
+| `points_log` | Owner only | System only (service role) | Never | Admin only |
 | `badges` | All | Admin only | Admin only | Admin only |
 | `user_badges` | All (public) | System only (service role) | Never | Admin only |
 | `motivational_quotes` | All | Admin only | Admin only | Admin only |
@@ -248,8 +290,9 @@ Admin can create custom badges from the admin panel. Badge checks run after each
 Key rules:
 - Entry editing restricted to same day only
 - Badge attribution via Server Action with `service_role` (not client-manipulable)
-- `is_admin` flag checked server-side in Server Actions + RLS policies
-- Storage: per-challenge buckets, read access for participants
+- `is_admin` flag checked server-side in Server Actions + RLS policies. The RLS UPDATE policy on `profiles` explicitly excludes `is_admin` from user-updatable columns.
+- Storage: per-challenge buckets, read access for participants, server-side MIME validation on upload
+- Admin can DELETE entries and entry values for data correction
 
 ## Tech Stack
 
@@ -294,7 +337,17 @@ defi_de_con/
 └── types/                     # Global TypeScript types
 ```
 
+## Pagination
+
+- Challenge list, leaderboard, history pages: offset-based pagination, 20 items per page
+- Index on `profiles.points_total DESC` for global leaderboard
+- Index on `challenge_participants.points_earned DESC` for per-challenge leaderboard
+
 ## Notifications
 
 - V1: In-app toasts only at key moments
 - No push notifications for V1
+
+## Database Migrations
+
+Managed via Supabase CLI (`supabase migration new`, `supabase db push`). Migration files stored in `supabase/migrations/` at project root.
