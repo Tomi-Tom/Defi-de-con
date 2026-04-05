@@ -60,6 +60,8 @@ Custom fields defined by admin per challenge.
 | `order` | integer | Display order |
 | `config` | jsonb | Type-specific: min/max, placeholder, accepted file types, etc. |
 
+Unique constraint on `(challenge_id, name)`.
+
 ### `challenge_participants`
 User enrollments in challenges.
 
@@ -102,6 +104,8 @@ EAV pattern — one row per field value per entry.
 | `value_number` | numeric | For number fields |
 | `value_date` | date | For date fields |
 | `value_file_url` | text | For file/image uploads |
+
+Unique constraint on `(entry_id, field_id)`.
 
 ### `badges`
 Badge definitions.
@@ -171,6 +175,7 @@ Quotes pool.
 /admin/challenges/[id]/edit    Edit challenge
 /admin/badges                  Manage badges
 /admin/quotes                  Manage motivational quotes
+/api/cron/challenges           Daily cron: transition overdue challenges, award Podium badges
 ```
 
 ### Layouts
@@ -282,7 +287,7 @@ Admin can create custom badges from the admin panel. Badge checks run after each
 | `challenge_participants` | All (leaderboard) | Authenticated (self) | Owner only | Owner only |
 | `daily_entries` | Challenge participants | Owner only | Owner only (same day) | Admin only |
 | `entry_values` | Challenge participants | Owner only | Owner only (same day) | Admin only |
-| `points_log` | Owner only | System only (service role) | Never | Admin only |
+| `points_log` | Owner only | System only (service role) | Never | Never |
 | `badges` | All | Admin only | Admin only | Admin only |
 | `user_badges` | All (public) | System only (service role) | Never | Admin only |
 | `motivational_quotes` | All | Admin only | Admin only | Admin only |
