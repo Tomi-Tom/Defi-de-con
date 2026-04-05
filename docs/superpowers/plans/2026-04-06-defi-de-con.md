@@ -10,7 +10,7 @@
 
 **Spec:** `docs/superpowers/specs/2026-04-06-defi-de-con-design.md`
 
-**Next.js 16 notes:** `params` and `searchParams` are Promises (must be awaited). Server Functions use `'use server'` directive. Use `refresh()` from `next/cache` to re-render after mutations. `PageProps<'/route'>` and `LayoutProps<'/route'>` are globally available type helpers. Route groups use `(folderName)` convention.
+**Next.js 16 notes:** `params` and `searchParams` are Promises (must be awaited). Server Functions use `'use server'` directive. Use `refresh()` from `next/cache` to re-render after mutations (NOT `revalidatePath`). `PageProps<'/route'>` and `LayoutProps<'/route'>` are globally available type helpers. Route groups use `(folderName)` convention. `middleware.ts` is DEPRECATED — use `proxy.ts` with `export function proxy()` instead.
 
 ---
 
@@ -106,7 +106,7 @@ defi_de_con/
 │       ├── quotes.ts                        # Quote selection logic
 │       ├── dates.ts                         # Date helpers (UTC)
 │       └── storage.ts                       # File upload helpers
-├── middleware.ts                             # Next.js middleware (auth redirect)
+├── proxy.ts                                 # Next.js proxy (auth redirect, replaces deprecated middleware.ts)
 ├── types/
 │   └── database.ts                          # Supabase generated types
 └── supabase/
@@ -861,6 +861,17 @@ insert into motivational_quotes (text, author, context) values
   ('Inarretable ! Ta regularite force le respect.', null, 'streak_milestone'),
   ('Tu montes dans le classement ! Les autres ont interet a s''accrocher.', null, 'rank_up'),
   ('Nouveau rang debloque ! La competition te va bien.', null, 'rank_up');
+
+-- ============================================
+-- increment_points helper function
+-- ============================================
+create or replace function increment_points(p_user_id uuid, p_challenge_id uuid, p_points integer)
+returns void as $$
+begin
+  update profiles set points_total = points_total + p_points where id = p_user_id;
+  update challenge_participants set points_earned = points_earned + p_points where user_id = p_user_id and challenge_id = p_challenge_id;
+end;
+$$ language plpgsql security definer;
 ```
 
 - [ ] **Step 2: Commit**
@@ -874,10 +885,10 @@ git commit -m "feat: add initial database schema migration with RLS policies and
 
 ---
 
-### Task 3: Auth Middleware & Validation Schemas
+### Task 3: Auth Proxy & Validation Schemas
 
 **Files:**
-- Create: `middleware.ts`
+- Create: `proxy.ts`
 - Create: `lib/supabase/middleware.ts`
 - Create: `lib/validations/auth.ts`
 - Create: `lib/validations/challenges.ts`
@@ -956,14 +967,14 @@ export async function updateSession(request: NextRequest) {
 }
 ```
 
-- [ ] **Step 2: Create Next.js middleware**
+- [ ] **Step 2: Create Next.js proxy (replaces deprecated middleware.ts)**
 
-Create `middleware.ts` at project root:
+Create `proxy.ts` at project root:
 ```ts
 import { type NextRequest } from 'next/server'
 import { updateSession } from '@/lib/supabase/middleware'
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   return await updateSession(request)
 }
 
@@ -1075,8 +1086,8 @@ pnpm build
 - [ ] **Step 8: Commit**
 
 ```bash
-git add middleware.ts lib/
-git commit -m "feat: add auth middleware, Supabase session management, and Zod validation schemas"
+git add proxy.ts lib/
+git commit -m "feat: add auth proxy, Supabase session management, and Zod validation schemas"
 ```
 
 ---
@@ -2331,7 +2342,7 @@ Create `lib/actions/participants.ts`:
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import { revalidatePath } from 'next/cache'
+import { refresh } from 'next/cache'
 
 export async function joinChallenge(challengeId: string) {
   const supabase = await createClient()
@@ -2347,7 +2358,7 @@ export async function joinChallenge(challengeId: string) {
     return { error: 'Erreur lors de l\'inscription' }
   }
 
-  revalidatePath(`/challenges/${challengeId}`)
+  refresh()
   return { success: true }
 }
 
@@ -2364,7 +2375,7 @@ export async function leaveChallenge(challengeId: string) {
 
   if (error) return { error: 'Erreur lors de la desinscription' }
 
-  revalidatePath(`/challenges/${challengeId}`)
+  refresh()
   return { success: true }
 }
 ```
@@ -2694,18 +2705,7 @@ export async function awardPoints({ userId, challengeId, entryId, currentStreak,
 }
 ```
 
-**Note:** This requires a Postgres function `increment_points`. Add to the migration:
-
-```sql
--- Add to supabase/migrations/00001_initial_schema.sql (or a new migration)
-create or replace function increment_points(p_user_id uuid, p_challenge_id uuid, p_points integer)
-returns void as $$
-begin
-  update profiles set points_total = points_total + p_points where id = p_user_id;
-  update challenge_participants set points_earned = points_earned + p_points where user_id = p_user_id and challenge_id = p_challenge_id;
-end;
-$$ language plpgsql security definer;
-```
+**Note:** The `increment_points` Postgres function is included in the initial migration (Task 2).
 
 - [ ] **Step 4: Create badges Server Action**
 
@@ -2800,7 +2800,7 @@ Create `lib/actions/entries.ts`:
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import { revalidatePath } from 'next/cache'
+import { refresh } from 'next/cache'
 import { submitEntrySchema, type SubmitEntryInput } from '@/lib/validations/entries'
 import { getTodayUTC, getYesterdayUTC } from '@/lib/utils/dates'
 import { awardPoints } from './points'
@@ -2866,7 +2866,7 @@ export async function submitEntry(input: SubmitEntryInput): Promise<EntryResult>
         }, { onConflict: 'entry_id,field_id' })
     }
 
-    revalidatePath(`/challenges/${challenge_id}`)
+    refresh()
     return { success: true, currentStreak: participation.current_streak }
   }
 
@@ -2935,8 +2935,7 @@ export async function submitEntry(input: SubmitEntryInput): Promise<EntryResult>
 
   const streakMilestone = awards.some(a => a.action.startsWith('streak_'))
 
-  revalidatePath(`/challenges/${challenge_id}`)
-  revalidatePath('/dashboard')
+  refresh()
 
   return {
     success: true,
@@ -3269,7 +3268,7 @@ Create `lib/actions/profile.ts`:
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import { revalidatePath } from 'next/cache'
+import { refresh } from 'next/cache'
 import { updateProfileSchema } from '@/lib/validations/profile'
 
 export async function updateProfile(formData: FormData) {
@@ -3294,7 +3293,7 @@ export async function updateProfile(formData: FormData) {
     return { error: 'Erreur lors de la mise a jour' }
   }
 
-  revalidatePath('/profile')
+  refresh()
   return { success: true }
 }
 ```
@@ -3524,7 +3523,7 @@ Create `lib/actions/challenges.ts`:
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import { revalidatePath } from 'next/cache'
+import { refresh } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createChallengeSchema } from '@/lib/validations/challenges'
 import { addDays, format } from 'date-fns'
@@ -3557,7 +3556,6 @@ export async function createChallenge(input: unknown) {
     fields.map(f => ({ ...f, challenge_id: challenge.id }))
   )
 
-  revalidatePath('/challenges')
   redirect(`/challenges/${challenge.id}`)
 }
 
@@ -3585,8 +3583,7 @@ export async function updateChallenge(challengeId: string, input: unknown) {
     fields.map(f => ({ ...f, challenge_id: challengeId }))
   )
 
-  revalidatePath(`/challenges/${challengeId}`)
-  revalidatePath('/admin')
+  refresh()
   return { success: true }
 }
 
@@ -3600,8 +3597,7 @@ export async function publishChallenge(challengeId: string) {
 
   if (error) return { error: 'Erreur lors de la publication' }
 
-  revalidatePath(`/challenges/${challengeId}`)
-  revalidatePath('/challenges')
+  refresh()
   return { success: true }
 }
 
@@ -3615,8 +3611,7 @@ export async function deleteChallenge(challengeId: string) {
 
   if (error) return { error: 'Impossible de supprimer (le defi a peut-etre des participants)' }
 
-  revalidatePath('/admin')
-  revalidatePath('/challenges')
+  refresh()
   return { success: true }
 }
 ```
@@ -3996,20 +3991,9 @@ git commit -m "feat: add admin panel with challenge creation, badges, and quotes
 - Create: `app/api/cron/challenges/route.ts`
 - Modify: `supabase/migrations/00001_initial_schema.sql` (add `increment_points` function)
 
-- [ ] **Step 1: Add increment_points to migration**
+- [ ] **Step 1: Create cron route handler**
 
-Create `supabase/migrations/00002_increment_points.sql`:
-```sql
-create or replace function increment_points(p_user_id uuid, p_challenge_id uuid, p_points integer)
-returns void as $$
-begin
-  update profiles set points_total = points_total + p_points where id = p_user_id;
-  update challenge_participants set points_earned = points_earned + p_points where user_id = p_user_id and challenge_id = p_challenge_id;
-end;
-$$ language plpgsql security definer;
-```
-
-- [ ] **Step 2: Create cron route handler**
+Note: The `increment_points` function is already in the initial migration (Task 2).
 
 Create `app/api/cron/challenges/route.ts`:
 ```ts
@@ -4059,11 +4043,22 @@ export async function GET(request: NextRequest) {
 
         if (podiumBadge) {
           for (const participant of top3) {
-            await admin.from('user_badges').upsert({
-              user_id: participant.user_id,
-              badge_id: podiumBadge.id,
-              challenge_id: challengeId,
-            }, { onConflict: 'user_id,badge_id,coalesce(challenge_id, \'00000000-0000-0000-0000-000000000000\')' })
+            // Check if badge already awarded (can't use upsert with functional unique constraint)
+            const { data: existing } = await admin
+              .from('user_badges')
+              .select('id')
+              .eq('user_id', participant.user_id)
+              .eq('badge_id', podiumBadge.id)
+              .eq('challenge_id', challengeId)
+              .limit(1)
+
+            if (!existing || existing.length === 0) {
+              await admin.from('user_badges').insert({
+                user_id: participant.user_id,
+                badge_id: podiumBadge.id,
+                challenge_id: challengeId,
+              })
+            }
           }
         }
       }
@@ -4074,7 +4069,7 @@ export async function GET(request: NextRequest) {
 }
 ```
 
-- [ ] **Step 3: Add vercel.json for cron schedule**
+- [ ] **Step 2: Add vercel.json for cron schedule**
 
 Create `vercel.json`:
 ```json
@@ -4088,16 +4083,16 @@ Create `vercel.json`:
 }
 ```
 
-- [ ] **Step 4: Verify build**
+- [ ] **Step 3: Verify build**
 
 ```bash
 pnpm build
 ```
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 4: Commit**
 
 ```bash
-git add app/api/cron/ supabase/migrations/00002_increment_points.sql vercel.json
+git add app/api/cron/ vercel.json
 git commit -m "feat: add daily cron job for challenge transitions and Podium badges"
 ```
 
