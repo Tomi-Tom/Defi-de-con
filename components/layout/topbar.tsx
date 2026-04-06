@@ -1,5 +1,6 @@
 import { Flame, Star } from 'lucide-react'
 import { AnimatedCounter } from '@/components/ui/animated-counter'
+import { UserAvatar } from '@/components/ui/user-avatar'
 
 interface TopbarProps {
   username: string
@@ -25,13 +26,7 @@ export function Topbar({ username, avatarUrl, points, streak }: TopbarProps) {
 
       <div className="flex items-center gap-3">
         <span className="text-sm font-semibold text-text-secondary">{username}</span>
-        <div className="w-9 h-9 rounded-full bg-accent-green/20 ring-2 ring-accent-green/30 flex items-center justify-center text-xs font-bold text-accent-green">
-          {avatarUrl ? (
-            <img src={avatarUrl} alt={username} className="w-full h-full rounded-full object-cover" />
-          ) : (
-            username.slice(0, 2).toUpperCase()
-          )}
-        </div>
+        <UserAvatar username={username} avatarUrl={avatarUrl} size="md" className="ring-2 ring-accent-green/30" />
       </div>
     </header>
   )
