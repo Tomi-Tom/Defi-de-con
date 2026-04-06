@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Users, Shield, ShieldOff, Trophy, Flame, Star } from 'lucide-react'
 import Link from 'next/link'
 import { toggleAdminRole } from '@/lib/actions/admin-badges'
+import { UserAvatar } from '@/components/ui/user-avatar'
 
 export default async function AdminUsersPage() {
   const { supabase } = await requireAdmin()
@@ -86,9 +87,7 @@ export default async function AdminUsersPage() {
                   </div>
 
                   {/* Avatar */}
-                  <div className={`w-11 h-11 rounded-full flex items-center justify-center text-sm font-bold ${p.is_admin ? 'bg-accent-orange/20 text-accent-orange' : 'bg-accent-green/10 text-accent-green'}`}>
-                    {p.username.slice(0, 2).toUpperCase()}
-                  </div>
+                  <UserAvatar username={p.username} avatarUrl={p.avatar_url} size="sm" />
 
                   {/* Info */}
                   <div className="flex-1 min-w-0">

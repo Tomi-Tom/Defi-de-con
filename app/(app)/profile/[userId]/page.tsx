@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { Star, Award, Trophy, Check } from 'lucide-react'
+import { UserAvatar } from '@/components/ui/user-avatar'
 
 export default async function PublicProfilePage(props: PageProps<'/profile/[userId]'>) {
   const { userId } = await props.params
@@ -25,9 +26,7 @@ export default async function PublicProfilePage(props: PageProps<'/profile/[user
         <div className="absolute top-0 right-0 w-48 h-48 bg-accent-green/5 rounded-full blur-3xl" />
 
         <div className="relative flex items-center gap-6">
-          <div className="w-20 h-20 rounded-2xl bg-accent-green/20 flex items-center justify-center text-3xl font-black text-accent-green flex-shrink-0">
-            {profile.username.slice(0, 2).toUpperCase()}
-          </div>
+          <UserAvatar username={profile.username} avatarUrl={profile.avatar_url} size="xl" className="rounded-2xl" />
           <div>
             <h1 className="text-3xl font-black text-white mb-1">{profile.username}</h1>
             <p className="text-accent-green font-bold text-sm">{profile.points_total} points</p>

@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { AvatarUpload } from './avatar-upload'
+import { UserAvatar } from '@/components/ui/user-avatar'
 import { format, parseISO } from 'date-fns'
 import { fr } from 'date-fns/locale'
 
@@ -31,15 +32,7 @@ export function ProfileHero({ userId, username, avatarUrl, isAdmin, createdAt, i
             onUploaded={setCurrentAvatar}
           />
         ) : (
-          <div className="w-20 h-20 rounded-2xl overflow-hidden bg-accent-green/20 flex items-center justify-center flex-shrink-0">
-            {currentAvatar ? (
-              <img src={currentAvatar} alt={username} className="w-full h-full object-cover" />
-            ) : (
-              <span className="text-3xl font-black text-accent-green">
-                {username.slice(0, 2).toUpperCase()}
-              </span>
-            )}
-          </div>
+          <UserAvatar username={username} avatarUrl={currentAvatar} size="xl" className="rounded-2xl" />
         )}
         <div>
           <div className="flex items-center gap-2 mb-1">

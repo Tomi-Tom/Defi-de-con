@@ -10,6 +10,7 @@ import { createAdjustment, deleteAdjustment } from '@/lib/actions/adjustments'
 import { format, parseISO, formatDistanceToNow } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { Settings, Target, Clock, Activity, Scale, Plus, Trash2 } from 'lucide-react'
+import { UserAvatar } from '@/components/ui/user-avatar'
 
 export default async function EditChallengePage(props: PageProps<'/admin/challenges/[id]/edit'>) {
   const { id } = await props.params
@@ -51,7 +52,7 @@ export default async function EditChallengePage(props: PageProps<'/admin/challen
 
   const { data: recentEntriesRaw } = await supabase
     .from('daily_entries')
-    .select('entry_date, submitted_at, profiles(username)')
+    .select('entry_date, submitted_at, profiles(username, avatar_url)')
     .eq('challenge_id', id)
     .order('submitted_at', { ascending: false })
     .limit(10)
@@ -61,7 +62,7 @@ export default async function EditChallengePage(props: PageProps<'/admin/challen
     .select('*', { count: 'exact', head: true })
     .eq('challenge_id', id)
 
-  type RecentEntry = { entry_date: string; submitted_at: string; profiles: { username: string } | null }
+  type RecentEntry = { entry_date: string; submitted_at: string; profiles: { username: string; avatar_url: string | null } | null }
   const recentEntries = (recentEntriesRaw ?? []) as unknown as RecentEntry[]
 
   // Group goals by field
@@ -206,13 +207,10 @@ export default async function EditChallengePage(props: PageProps<'/admin/challen
             <div className="space-y-2">
               {recentEntries.map((entry, i) => {
                 const username = entry.profiles?.username ?? 'Inconnu'
-                const initials = username.slice(0, 2).toUpperCase()
                 const relativeTime = formatDistanceToNow(new Date(entry.submitted_at), { addSuffix: true, locale: fr })
                 return (
                   <div key={i} className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-accent-green/20 flex items-center justify-center flex-shrink-0">
-                      <span className="text-[10px] font-black text-accent-green">{initials}</span>
-                    </div>
+                    <UserAvatar username={username} avatarUrl={entry.profiles?.avatar_url ?? null} size="sm" />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm text-white truncate">
                         <span className="font-bold">{username}</span>
