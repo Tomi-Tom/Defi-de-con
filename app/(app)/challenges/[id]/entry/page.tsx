@@ -2,6 +2,7 @@ import { requireAuth } from '@/lib/supabase/require-auth'
 import { notFound, redirect } from 'next/navigation'
 import { DailyEntryForm } from '@/components/challenges/daily-entry-form'
 import { getTodayUTC } from '@/lib/utils/dates'
+import { Flame } from 'lucide-react'
 
 type ChallengeWithFields = {
   title: string
@@ -56,11 +57,20 @@ export default async function EntryPage(props: PageProps<'/challenges/[id]/entry
   }
 
   return (
-    <div className="max-w-lg mx-auto space-y-6">
-      <h2 className="text-2xl font-black">{challenge.title}</h2>
-      <p className="text-text-muted text-sm">
-        {existingValues.length > 0 ? 'Modifier la saisie du jour' : 'Saisie du jour'}
-      </p>
+    <div className="animate-fade-in max-w-lg mx-auto space-y-6">
+      {/* Hero section */}
+      <div className="text-center py-4">
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent-green/10 border border-accent-green/20 mb-4">
+          <Flame size={14} className="text-accent-green" />
+          <span className="text-xs font-black uppercase tracking-wider text-accent-green">
+            {existingValues.length > 0 ? 'Modifier' : 'Saisie du jour'}
+          </span>
+        </div>
+        <h2 className="text-3xl font-black tracking-tight">{challenge.title}</h2>
+        <p className="text-text-muted text-sm mt-2">
+          {existingValues.length > 0 ? 'Modifie ta saisie du jour' : 'Remplis tes donnees et valide. 30 secondes top chrono.'}
+        </p>
+      </div>
 
       <DailyEntryForm
         challengeId={id}
