@@ -117,7 +117,7 @@ export default async function ChallengeDetailPage(props: PageProps<'/challenges/
           </div>
 
           <h1 className="text-4xl md:text-5xl font-black tracking-tight text-white mb-3">{challenge.title}</h1>
-          <p className="text-text-secondary text-lg max-w-2xl">{challenge.description}</p>
+          <p className="text-text-secondary text-lg max-w-2xl whitespace-pre-line">{challenge.description}</p>
 
           {/* Stats row */}
           <div className="flex flex-wrap gap-6 mt-6">

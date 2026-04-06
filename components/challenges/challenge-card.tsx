@@ -51,7 +51,7 @@ export function ChallengeCard({ id, title, description, startDate, endDate, stat
 
           {/* Title */}
           <h3 className="text-xl font-black text-white mb-1 group-hover:text-accent-green transition-colors">{title}</h3>
-          <p className="text-sm text-text-muted mb-4 line-clamp-2">{description}</p>
+          <p className="text-sm text-text-muted mb-4 line-clamp-2 whitespace-pre-line">{description}</p>
 
           {/* Meta row */}
           <div className="flex items-center gap-4 text-xs text-text-secondary mb-4">
