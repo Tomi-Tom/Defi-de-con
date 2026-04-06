@@ -54,12 +54,24 @@ body {
   50% { box-shadow: 0 0 24px rgba(0, 255, 135, 0.6); }
 }
 
+@keyframes pulse-glow-orange {
+  0%, 100% { box-shadow: 0 0 8px rgba(255, 107, 0, 0.3); }
+  50% { box-shadow: 0 0 24px rgba(255, 107, 0, 0.6); }
+}
+
+@keyframes pulse-glow-yellow {
+  0%, 100% { box-shadow: 0 0 8px rgba(250, 204, 21, 0.25); }
+  50% { box-shadow: 0 0 24px rgba(250, 204, 21, 0.5); }
+}
+
 .animate-fade-in { animation: fadeIn 0.4s ease-out; }
 .animate-slide-up { animation: slideUp 0.5s ease-out; }
 .animate-scale-in { animation: scaleIn 0.3s ease-out; }
 .animate-badge-unlock { animation: badgeUnlock 0.6s ease-out; }
 .animate-shake { animation: shake 0.4s ease-in-out; }
 .animate-pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }
+.animate-pulse-glow-orange { animation: pulse-glow-orange 2s ease-in-out infinite; }
+.animate-pulse-glow-yellow { animation: pulse-glow-yellow 2s ease-in-out infinite; }
 
 .stagger-1 { animation-delay: 0.05s; animation-fill-mode: both; }
 .stagger-2 { animation-delay: 0.1s; animation-fill-mode: both; }

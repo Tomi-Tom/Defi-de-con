@@ -1,3 +1,5 @@
+import Link from 'next/link'
+import { Flame } from 'lucide-react'
 import { requireAuth } from '@/lib/supabase/require-auth'
 import { selectDailyQuote } from '@/lib/utils/quotes'
 import { StreakWidget } from '@/components/dashboard/streak-widget'
@@ -8,6 +10,7 @@ import { ActiveChallengesWidget } from '@/components/dashboard/active-challenges
 import { RecentBadgesWidget } from '@/components/dashboard/recent-badges-widget'
 import { DailyQuoteWidget } from '@/components/dashboard/daily-quote-widget'
 import { LastEntryWidget } from '@/components/dashboard/last-entry-widget'
+import { Button } from '@/components/ui/button'
 import { differenceInDays, parseISO } from 'date-fns'
 
 export default async function DashboardPage() {
@@ -15,14 +18,14 @@ export default async function DashboardPage() {
 
   const [
     profileRes, participationsRes, rankRes, badgesRes, quotesRes,
-    todayPointsRes, totalEntriesRes, lastEntryRes
+    todayPointsRes, totalEntriesRes, lastEntryRes, pointsLogRes
   ] = await Promise.all([
     supabase.from('profiles').select('points_total, username').eq('id', user.id).single(),
     supabase
       .from('challenge_participants')
       .select('challenge_id, current_streak, best_streak, challenges(id, title, start_date, duration_days, status)')
       .eq('user_id', user.id),
-    supabase.from('profiles').select('id').order('points_total', { ascending: false }),
+    supabase.from('profiles').select('id, points_total').order('points_total', { ascending: false }),
     supabase
       .from('user_badges')
       .select('badges(name, icon_url)')
@@ -46,6 +49,10 @@ export default async function DashboardPage() {
       .order('entry_date', { ascending: false })
       .limit(1)
       .single(),
+    supabase
+      .from('points_log')
+      .select('points, action')
+      .eq('user_id', user.id),
   ])
 
   const profile = profileRes.data as unknown as { points_total: number; username: string } | null
@@ -55,7 +62,7 @@ export default async function DashboardPage() {
     best_streak: number
     challenges: { id: string; title: string; start_date: string; duration_days: number; status: string } | null
   }>
-  const rankList = (rankRes.data ?? []) as unknown as Array<{ id: string }>
+  const rankList = (rankRes.data ?? []) as unknown as Array<{ id: string; points_total: number }>
   const badges = (badgesRes.data ?? []) as unknown as Array<{
     badges: { name: string; icon_url: string } | null
   }>
@@ -74,12 +81,33 @@ export default async function DashboardPage() {
       challenge_fields: { label: string; type: string } | null
     }>
   } | null
+  const allPointsLog = (pointsLogRes.data ?? []) as unknown as Array<{ points: number; action: string }>
 
   const rank = rankList.findIndex(p => p.id === user.id) + 1
   const todayPoints = todayPointsData.reduce((sum, p) => sum + p.points, 0)
   const bestStreak = participations.reduce((max, p) => Math.max(max, p.current_streak), 0)
   const bestStreakEver = participations.reduce((max, p) => Math.max(max, p.best_streak), 0)
   const completedChallenges = participations.filter(p => p.challenges?.status === 'completed').length
+
+  // Points breakdown
+  const breakdown = allPointsLog.reduce(
+    (acc, row) => {
+      if (row.action === 'daily_entry' || row.action === 'first_entry') {
+        acc.entries += row.points
+      } else if (row.action.startsWith('streak_')) {
+        acc.streaks += row.points
+      } else {
+        acc.bonuses += row.points
+      }
+      return acc
+    },
+    { entries: 0, streaks: 0, bonuses: 0 }
+  )
+
+  // Points to next rank
+  const myPoints = profile?.points_total ?? 0
+  const rankAbove = rank >= 2 ? rankList[rank - 2] : null
+  const pointsToNext = rankAbove ? Math.max(0, rankAbove.points_total - myPoints) : null
 
   // Active challenges
   const today = new Date().toISOString().slice(0, 10)
@@ -100,6 +128,17 @@ export default async function DashboardPage() {
       return { id: c.id, title: c.title, progress, hasEntryToday: todayEntryIds.has(c.id) }
     })
 
+  // Sort by urgency: no entry today first, then by progress descending
+  const sortedChallenges = [...activeChallenges].sort((a, b) => {
+    if (a.hasEntryToday === b.hasEntryToday) return b.progress - a.progress
+    return a.hasEntryToday ? 1 : -1 // no entry first
+  })
+
+  // Streak at risk: bestStreak > 0 AND there are active challenges without today's entry
+  const challengesWithoutEntry = sortedChallenges.filter(c => !c.hasEntryToday)
+  const showStreakBanner = bestStreak > 0 && challengesWithoutEntry.length > 0
+  const firstChallengeWithoutEntry = challengesWithoutEntry[0]
+
   // Last entry fields
   const lastEntryFields = lastEntryRaw?.entry_values
     ?.filter(v => v.challenge_fields)
@@ -118,14 +157,29 @@ export default async function DashboardPage() {
         <h2 className="text-2xl font-black">
           Salut, <span className="text-accent-green">{profile?.username ?? 'champion'}</span>
         </h2>
-        <p className="text-text-muted text-sm mt-1">Pret a tout donner aujourd'hui ?</p>
+        <p className="text-text-muted text-sm mt-1">Pret a tout donner aujourd&apos;hui ?</p>
       </div>
+
+      {/* Streak at risk banner */}
+      {showStreakBanner && (
+        <div className="animate-pulse-glow-orange rounded-2xl bg-accent-orange/10 border border-accent-orange/20 p-4 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Flame size={20} className="text-accent-orange shrink-0" />
+            <p className="text-sm font-semibold text-white">
+              Ton streak de <span className="text-accent-orange">{bestStreak}j</span> est en danger&nbsp;! Saisis tes donnees avant minuit.
+            </p>
+          </div>
+          <Link href={`/challenges/${firstChallengeWithoutEntry.id}/entry`} className="shrink-0">
+            <Button size="sm">Saisir maintenant</Button>
+          </Link>
+        </div>
+      )}
 
       {/* Main stats row */}
       <div className="animate-slide-up stagger-1 grid grid-cols-2 md:grid-cols-3 gap-3">
         <StreakWidget streak={bestStreak} />
-        <PointsWidget points={profile?.points_total ?? 0} todayPoints={todayPoints} />
-        <RankWidget rank={rank || 1} total={rankList.length} />
+        <PointsWidget points={profile?.points_total ?? 0} todayPoints={todayPoints} breakdown={breakdown} />
+        <RankWidget rank={rank || 1} total={rankList.length} pointsToNext={pointsToNext} />
       </div>
 
       {/* Secondary stats row */}
@@ -139,7 +193,7 @@ export default async function DashboardPage() {
 
       {/* Active challenges */}
       <div className="animate-slide-up stagger-3">
-        <ActiveChallengesWidget challenges={activeChallenges} />
+        <ActiveChallengesWidget challenges={sortedChallenges} />
       </div>
 
       {/* Last entry */}

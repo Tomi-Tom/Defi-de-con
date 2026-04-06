@@ -22,7 +22,7 @@ export function ActiveChallengesWidget({ challenges }: { challenges: ActiveChall
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         {challenges.map((c) => (
-          <div key={c.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-bg-tertiary transition-colors">
+          <div key={c.id} className={`flex items-center gap-3 p-2 rounded-lg hover:bg-bg-tertiary transition-colors border-l-2 ${c.hasEntryToday ? 'border-accent-green' : 'border-accent-orange'}`}>
             <div className="flex-1">
               <ProgressBar value={c.progress} label={c.title} />
             </div>

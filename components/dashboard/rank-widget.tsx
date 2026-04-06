@@ -1,7 +1,15 @@
 import { TrendingUp } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 
-export function RankWidget({ rank, total }: { rank: number; total: number }) {
+export function RankWidget({
+  rank,
+  total,
+  pointsToNext,
+}: {
+  rank: number
+  total: number
+  pointsToNext?: number | null
+}) {
   const percentile = total > 0 ? Math.round((1 - rank / total) * 100) : 0
 
   return (
@@ -17,6 +25,11 @@ export function RankWidget({ rank, total }: { rank: number; total: number }) {
             {percentile > 0 && (
               <div className="text-xs font-semibold text-accent-orange">
                 Top {100 - percentile}%
+              </div>
+            )}
+            {pointsToNext != null && pointsToNext > 0 && (
+              <div className="text-xs font-semibold text-accent-green">
+                Encore {pointsToNext} pts pour #{rank - 1}
               </div>
             )}
           </div>
