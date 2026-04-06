@@ -15,11 +15,16 @@ export function Sidebar({ isAdmin }: { isAdmin: boolean }) {
 
   return (
     <aside className="hidden md:flex flex-col w-64 bg-bg-secondary border-r border-border h-screen sticky top-0">
-      <div className="p-6">
-        <Link href="/dashboard" className="text-2xl font-black tracking-tight">
-          <span className="text-accent-green">DEFI</span>DECON
+      <div className="p-6 pb-4">
+        <Link href="/dashboard" className="group block">
+          <span className="text-2xl font-black tracking-tighter">
+            <span className="text-accent-green group-hover:drop-shadow-[0_0_8px_rgba(0,255,135,0.5)] transition-all duration-300">DEFI</span>
+            <span className="text-white">DE</span>
+            <span className="text-accent-orange">CON</span>
+          </span>
         </Link>
       </div>
+      <div className="mx-4 mb-3 border-t border-border/50" />
 
       <nav className="flex-1 px-3 flex flex-col">
         {/* Main navigation */}
@@ -75,6 +80,9 @@ export function Sidebar({ isAdmin }: { isAdmin: boolean }) {
           Mon profil
         </Link>
       </nav>
+      <div className="px-4 py-3 text-[9px] text-text-muted/50 uppercase tracking-widest">
+        v1.0 — Defi De Con
+      </div>
     </aside>
   )
 }
