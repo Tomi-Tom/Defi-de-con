@@ -2,11 +2,12 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Trophy, User } from 'lucide-react'
+import { LayoutDashboard, Trophy, User, Award } from 'lucide-react'
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/challenges', label: 'Defis', icon: Trophy },
+  { href: '/profile/badges', label: 'Badges', icon: Award },
   { href: '/profile', label: 'Profil', icon: User },
 ]
 
