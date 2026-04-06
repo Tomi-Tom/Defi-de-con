@@ -143,6 +143,7 @@ export default async function EntryPage(props: PageProps<'/challenges/[id]/entry
         challengeId={id}
         fields={fields}
         existingValues={existingValues}
+        yesterdayValues={yesterdayValues}
         quotes={quotesRes.data ?? []}
         goals={goalInfos}
       />
