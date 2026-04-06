@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" fill="none">
+  <!-- Bolt shape -->
+  <polygon points="38,4 20,34 30,34 26,60 44,30 34,30" fill="#00ff87" opacity="0.85" stroke="#00ff87" stroke-width="1" stroke-linejoin="round"/>
+  <!-- Glow -->
+  <polygon points="38,4 20,34 30,34 26,60 44,30 34,30" fill="none" stroke="#00ff87" stroke-width="3" stroke-linejoin="round" opacity="0.3"/>
+</svg>

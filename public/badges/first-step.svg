@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" fill="none">
+  <!-- Foot/step shape -->
+  <ellipse cx="28" cy="38" rx="12" ry="16" fill="#00ff87" opacity="0.15" stroke="#00ff87" stroke-width="2"/>
+  <ellipse cx="26" cy="24" rx="4" ry="3" fill="#00ff87" opacity="0.3"/>
+  <ellipse cx="32" cy="22" rx="3.5" ry="2.5" fill="#00ff87" opacity="0.3"/>
+  <ellipse cx="37" cy="23" rx="3" ry="2.5" fill="#00ff87" opacity="0.3"/>
+  <ellipse cx="41" cy="26" rx="2.5" ry="2" fill="#00ff87" opacity="0.3"/>
+  <!-- Shine -->
+  <circle cx="23" cy="30" r="3" fill="#00ff87" opacity="0.4"/>
+  <!-- Label star -->
+  <polygon points="32,6 34,12 40,12 35,16 37,22 32,18 27,22 29,16 24,12 30,12" fill="#00ff87" stroke="#00ff87" stroke-width="0.5" opacity="0.9"/>
+</svg>
