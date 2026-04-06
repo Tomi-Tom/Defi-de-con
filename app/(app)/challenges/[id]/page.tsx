@@ -7,7 +7,7 @@ import { ChallengeJournal } from '@/components/challenges/challenge-journal'
 import { joinChallenge, leaveChallenge } from '@/lib/actions/participants'
 import { differenceInDays, parseISO, format } from 'date-fns'
 import { fr } from 'date-fns/locale'
-import { Calendar, Users, Clock, Flame, Trophy, LayoutDashboard, BookOpen, Crown } from 'lucide-react'
+import { Calendar, Users, Clock, Flame, Trophy, Crown } from 'lucide-react'
 import Link from 'next/link'
 
 export default async function ChallengeDetailPage(props: PageProps<'/challenges/[id]'>) {
@@ -223,7 +223,6 @@ export default async function ChallengeDetailPage(props: PageProps<'/challenges/
           {
             id: 'dashboard',
             label: 'Dashboard',
-            icon: LayoutDashboard,
             content: (
               <ChallengeDashboardTab
                 fields={fields}
@@ -234,7 +233,6 @@ export default async function ChallengeDetailPage(props: PageProps<'/challenges/
           ...(isParticipant ? [{
             id: 'journal',
             label: 'Mon journal',
-            icon: BookOpen,
             content: (
               <ChallengeJournal
                 entries={myEntries}
@@ -246,7 +244,6 @@ export default async function ChallengeDetailPage(props: PageProps<'/challenges/
           {
             id: 'participants',
             label: `Participants (${participants.length})`,
-            icon: Users,
             content: (
               <div className="space-y-2">
                 {participants.map((p, i) => (
