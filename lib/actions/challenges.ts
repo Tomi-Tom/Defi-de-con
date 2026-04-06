@@ -49,7 +49,7 @@ export async function createChallenge(input: unknown) {
   )
   if (fieldsError) return { error: `Erreur champs: ${fieldsError.message}` }
 
-  redirect(`/challenges/${(challenge as any).id}`)
+  return { success: true, challengeId: (challenge as any).id }
 }
 
 export async function updateChallenge(challengeId: string, input: unknown) {

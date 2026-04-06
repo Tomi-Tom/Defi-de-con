@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import { createChallenge } from '@/lib/actions/challenges'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -13,6 +14,7 @@ export default function NewChallengePage() {
     name: string; label: string; type: string; required: boolean; order: number; config: Record<string, unknown> | null
   }>>([])
   const [isPending, startTransition] = useTransition()
+  const router = useRouter()
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -36,8 +38,10 @@ export default function NewChallengePage() {
 
       if (result?.error) {
         toast.error(result.error)
+      } else if (result?.challengeId) {
+        toast.success('Defi cree !')
+        router.push(`/challenges/${result.challengeId}`)
       }
-      // On success, the Server Action redirects
     })
   }
 
