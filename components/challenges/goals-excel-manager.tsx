@@ -1,6 +1,6 @@
 'use client'
 
-import { useTransition, useRef } from 'react'
+import { useTransition, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import { importGoals, type GoalRow } from '@/lib/actions/goals'
@@ -25,6 +25,7 @@ interface GoalsExcelManagerProps {
 export function GoalsExcelManager({ challengeId, challengeTitle, startDate, durationDays, fields }: GoalsExcelManagerProps) {
   const [isPending, startTransition] = useTransition()
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [previewData, setPreviewData] = useState<{ goals: GoalRow[]; summary: string } | null>(null)
 
   // Only numeric fields have goals
   const numericFields = fields.filter(f => f.type === 'number')
@@ -146,23 +147,32 @@ export function GoalsExcelManager({ challengeId, challengeTitle, startDate, dura
         return
       }
 
-      // Import
-      startTransition(async () => {
-        const result = await importGoals(challengeId, goals)
-        if (result.error) {
-          toast.error(result.error)
-        } else {
-          toast.success(`${result.count} objectifs importes !`, {
-            description: 'Les objectifs sont maintenant actifs',
-            style: { background: '#0a1a0a', border: '1px solid #00ff87' },
-          })
-        }
+      // Show preview instead of importing directly
+      setPreviewData({
+        goals,
+        summary: `${goals.length} objectifs sur ${new Set(goals.map(g => g.goal_date)).size} jours pour ${fieldMap.size} champ(s)`,
       })
     }
 
     reader.readAsBinaryString(file)
     // Reset input
     if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  const confirmImport = () => {
+    if (!previewData) return
+    startTransition(async () => {
+      const result = await importGoals(challengeId, previewData.goals)
+      if (result.error) {
+        toast.error(result.error)
+      } else {
+        toast.success(`${result.count} objectifs importes !`, {
+          description: 'Les objectifs sont maintenant actifs',
+          style: { background: '#0a1a0a', border: '1px solid #00ff87' },
+        })
+        setPreviewData(null)
+      }
+    })
   }
 
   if (numericFields.length === 0) {
@@ -214,6 +224,38 @@ export function GoalsExcelManager({ challengeId, challengeTitle, startDate, dura
       <div className="mt-3 text-xs text-text-muted">
         Champs reconnus : {numericFields.map(f => f.label).join(', ')}
       </div>
+
+      {previewData && (
+        <div className="mt-4 bg-bg-tertiary rounded-xl border border-border p-4 space-y-3">
+          <p className="text-sm font-bold text-white">{previewData.summary}</p>
+          <div className="overflow-x-auto max-h-40">
+            <table className="text-xs w-full">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="text-left py-1 px-2 text-text-muted font-bold uppercase">Date</th>
+                  <th className="text-left py-1 px-2 text-text-muted font-bold uppercase">Champ</th>
+                  <th className="text-right py-1 px-2 text-text-muted font-bold uppercase">Valeur</th>
+                </tr>
+              </thead>
+              <tbody>
+                {previewData.goals.slice(0, 5).map((g, i) => (
+                  <tr key={i} className="border-b border-border/50">
+                    <td className="py-1 px-2 text-text-secondary">{g.goal_date}</td>
+                    <td className="py-1 px-2 text-text-secondary">{numericFields.find(f => f.id === g.field_id)?.label ?? g.field_id}</td>
+                    <td className="py-1 px-2 text-right font-bold text-white">{g.target_value}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="flex gap-2">
+            <Button onClick={confirmImport} disabled={isPending}>
+              {isPending ? 'Import...' : 'Confirmer l\'import'}
+            </Button>
+            <Button variant="ghost" onClick={() => setPreviewData(null)} disabled={isPending}>Annuler</Button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

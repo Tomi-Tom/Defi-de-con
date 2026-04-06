@@ -3,9 +3,9 @@ import { notFound } from 'next/navigation'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { GoalsExcelManager } from '@/components/challenges/goals-excel-manager'
 import { getGoalsForChallenge } from '@/lib/actions/goals'
-import { format, parseISO } from 'date-fns'
+import { format, parseISO, formatDistanceToNow } from 'date-fns'
 import { fr } from 'date-fns/locale'
-import { Settings, Target } from 'lucide-react'
+import { Settings, Target, Clock, Activity } from 'lucide-react'
 
 export default async function EditChallengePage(props: PageProps<'/admin/challenges/[id]/edit'>) {
   const { id } = await props.params
@@ -32,6 +32,21 @@ export default async function EditChallengePage(props: PageProps<'/admin/challen
   const challenge = challengeRaw as unknown as ChallengeWithFields
 
   const goals = await getGoalsForChallenge(id)
+
+  const { data: recentEntriesRaw } = await supabase
+    .from('daily_entries')
+    .select('entry_date, submitted_at, profiles(username)')
+    .eq('challenge_id', id)
+    .order('submitted_at', { ascending: false })
+    .limit(10)
+
+  const { count: totalEntryCount } = await supabase
+    .from('daily_entries')
+    .select('*', { count: 'exact', head: true })
+    .eq('challenge_id', id)
+
+  type RecentEntry = { entry_date: string; submitted_at: string; profiles: { username: string } | null }
+  const recentEntries = (recentEntriesRaw ?? []) as unknown as RecentEntry[]
 
   // Group goals by field
   const numericFields = challenge.challenge_fields.filter(f => f.type === 'number')
@@ -80,6 +95,50 @@ export default async function EditChallengePage(props: PageProps<'/admin/challen
           type: f.type,
         }))}
       />
+
+      {/* Participant activity feed */}
+      <Card>
+        <CardHeader>
+          <h3 className="text-sm font-black uppercase tracking-widest text-text-muted flex items-center gap-2">
+            <Clock size={14} />
+            Activite recente
+            {totalEntryCount != null && (
+              <span className="text-xs text-text-muted ml-auto font-normal normal-case tracking-normal">
+                <Activity size={10} className="inline mr-1" />
+                {totalEntryCount} saisies au total
+              </span>
+            )}
+          </h3>
+        </CardHeader>
+        <CardContent>
+          {recentEntries.length === 0 ? (
+            <p className="text-sm text-text-muted">Aucune activite</p>
+          ) : (
+            <div className="space-y-2">
+              {recentEntries.map((entry, i) => {
+                const username = entry.profiles?.username ?? 'Inconnu'
+                const initials = username.slice(0, 2).toUpperCase()
+                const relativeTime = formatDistanceToNow(new Date(entry.submitted_at), { addSuffix: true, locale: fr })
+                return (
+                  <div key={i} className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-accent-green/20 flex items-center justify-center flex-shrink-0">
+                      <span className="text-[10px] font-black text-accent-green">{initials}</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-white truncate">
+                        <span className="font-bold">{username}</span>
+                        {' '}a saisi le{' '}
+                        <span className="text-text-secondary">{format(parseISO(entry.entry_date), 'd MMM', { locale: fr })}</span>
+                      </p>
+                    </div>
+                    <span className="text-xs text-text-muted flex-shrink-0">{relativeTime}</span>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Current goals preview */}
       {goals.length > 0 && (

@@ -1,9 +1,9 @@
 import { requireAdmin } from '@/lib/supabase/require-auth'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { publishChallenge, deleteChallenge } from '@/lib/actions/challenges'
+import { publishChallenge, deleteChallenge, duplicateChallenge } from '@/lib/actions/challenges'
 import Link from 'next/link'
-import { Plus, Users, Award, MessageSquareQuote, Trophy, Flame, Calendar, TrendingUp, Eye, Settings } from 'lucide-react'
+import { Plus, Users, Award, MessageSquareQuote, Trophy, Flame, Calendar, TrendingUp, Eye, Settings, Copy } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import { fr } from 'date-fns/locale'
 
@@ -143,6 +143,12 @@ function ChallengeRow({ challenge: c }: { challenge: any }) {
         <Link href={`/challenges/${c.id}`}>
           <Button variant="ghost" size="sm"><Eye size={14} /></Button>
         </Link>
+        <form action={async () => {
+          'use server'
+          await duplicateChallenge(c.id)
+        }}>
+          <Button variant="ghost" size="sm" type="submit" title="Dupliquer"><Copy size={14} /></Button>
+        </form>
         <Link href={`/admin/challenges/${c.id}/edit`}>
           <Button variant="secondary" size="sm">Gerer</Button>
         </Link>
@@ -165,6 +171,12 @@ function DraftRow({ challenge: c }: { challenge: any }) {
         <Link href={`/admin/challenges/${c.id}/edit`}>
           <Button variant="secondary" size="sm">Modifier</Button>
         </Link>
+        <form action={async () => {
+          'use server'
+          await duplicateChallenge(c.id)
+        }}>
+          <Button variant="ghost" size="sm" type="submit" title="Dupliquer"><Copy size={14} /></Button>
+        </form>
         <form action={async () => {
           'use server'
           await publishChallenge(c.id)
