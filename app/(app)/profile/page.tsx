@@ -7,18 +7,17 @@ import { Select } from '@/components/ui/select'
 import { updateProfile } from '@/lib/actions/profile'
 import { logout } from '@/lib/actions/auth'
 import { ProfileHero } from '@/components/profile/profile-hero'
-import { Star, Award, Trophy, Calendar, Flame, Crown, ArrowRight, Settings } from 'lucide-react'
+import { Star, Award, Trophy, Calendar, Flame, ArrowRight, Settings } from 'lucide-react'
 import Link from 'next/link'
 
 export default async function ProfilePage() {
   const { supabase, user } = await requireAuth()
 
-  const [profileRes, badgesRes, challengesRes, entriesCountRes, rankRes, participationsRes] = await Promise.all([
+  const [profileRes, badgesRes, challengesRes, entriesCountRes, participationsRes] = await Promise.all([
     supabase.from('profiles').select('username, avatar_url, points_total, entry_mode, is_admin, created_at').eq('id', user.id).single(),
     supabase.from('user_badges').select('badges(name, icon_url), earned_at').eq('user_id', user.id).order('earned_at', { ascending: false }),
     supabase.from('challenge_participants').select('challenges(id, title, status)').eq('user_id', user.id),
     supabase.from('daily_entries').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
-    supabase.from('profiles').select('id').order('points_total', { ascending: false }),
     supabase.from('challenge_participants').select('best_streak').eq('user_id', user.id),
   ])
 
@@ -26,8 +25,6 @@ export default async function ProfilePage() {
   const badges = (badgesRes.data ?? []) as unknown as Array<{ badges: { name: string; icon_url: string } | null; earned_at: string }>
   const challenges = (challengesRes.data ?? []) as unknown as Array<{ challenges: { id: string; title: string; status: string } | null }>
   const totalEntries = entriesCountRes.count ?? 0
-  const rankList = (rankRes.data ?? []) as unknown as Array<{ id: string }>
-  const rank = rankList.findIndex(p => p.id === user.id) + 1
   const bestStreakEver = ((participationsRes.data ?? []) as unknown as Array<{ best_streak: number }>).reduce((max, p) => Math.max(max, p.best_streak), 0)
 
   return (
@@ -43,13 +40,12 @@ export default async function ProfilePage() {
       />
 
       {/* Stats grid */}
-      <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
+      <div className="grid grid-cols-3 md:grid-cols-5 gap-3">
         <StatCard label="Points" value={profile.points_total} icon={Star} color="text-accent-green" bg="bg-accent-green/10" />
         <StatCard label="Badges" value={badges.length} icon={Award} color="text-yellow-400" bg="bg-yellow-400/10" />
         <StatCard label="Defis" value={challenges.length} icon={Trophy} color="text-accent-orange" bg="bg-accent-orange/10" />
         <StatCard label="Entrees" value={totalEntries} icon={Calendar} color="text-purple-400" bg="bg-purple-400/10" />
         <StatCard label="Best streak" value={`${bestStreakEver}j`} icon={Flame} color="text-accent-orange" bg="bg-accent-orange/10" />
-        <StatCard label="Rang" value={`#${rank}`} icon={Crown} color="text-yellow-400" bg="bg-yellow-400/10" />
       </div>
 
       {/* Badges preview */}

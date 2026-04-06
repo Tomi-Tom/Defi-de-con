@@ -9,7 +9,8 @@ import { EntryRecapPopup } from '@/components/challenges/entry-recap-popup'
 import { joinChallenge, leaveChallenge } from '@/lib/actions/participants'
 import { differenceInDays, parseISO, format } from 'date-fns'
 import { fr } from 'date-fns/locale'
-import { Calendar, Users, Clock, Flame, Trophy, Crown } from 'lucide-react'
+import { Calendar, Users, Clock, Flame, Trophy } from 'lucide-react'
+import { UserAvatar } from '@/components/ui/user-avatar'
 import Link from 'next/link'
 
 export default async function ChallengeDetailPage(props: PageProps<'/challenges/[id]'>) {
@@ -90,10 +91,6 @@ export default async function ChallengeDetailPage(props: PageProps<'/challenges/
     streak: p.current_streak,
   }))
 
-  // My rank
-  const myRank = participants.findIndex(p => p.user_id === user.id) + 1
-  const myPoints = participants.find(p => p.user_id === user.id)?.points_earned ?? 0
-
   const fields = challenge.challenge_fields as Array<{ id: string; label: string; type: string; required: boolean; order: number }>
 
   return (
@@ -157,17 +154,6 @@ export default async function ChallengeDetailPage(props: PageProps<'/challenges/
                 <div className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Periode</div>
               </div>
             </div>
-            {isParticipant && myRank > 0 && (
-              <div className="flex items-center gap-2">
-                <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center">
-                  <Crown size={18} className="text-purple-400" />
-                </div>
-                <div>
-                  <div className="text-xl font-black text-white">#{myRank}</div>
-                  <div className="text-[10px] font-bold uppercase tracking-widest text-text-muted">{myPoints} pts</div>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>
@@ -256,26 +242,23 @@ export default async function ChallengeDetailPage(props: PageProps<'/challenges/
             label: `Participants (${participants.length})`,
             content: (
               <div className="space-y-2">
-                {participants.map((p, i) => (
+                {[...participants].sort((a, b) => (a.profiles?.username ?? '').localeCompare(b.profiles?.username ?? '')).map((p) => (
                   <Link
                     key={p.user_id}
                     href={`/profile/${p.user_id}`}
                     className="flex items-center gap-3 p-3 rounded-xl bg-bg-secondary border border-border hover:border-accent-green/30 transition-all"
                   >
-                    <span className={`w-6 text-center text-sm font-black ${i === 0 ? 'text-yellow-400' : i === 1 ? 'text-gray-300' : i === 2 ? 'text-amber-600' : 'text-text-muted'}`}>
-                      #{i + 1}
-                    </span>
-                    <div className="w-9 h-9 rounded-full bg-accent-green/10 flex items-center justify-center text-xs font-bold text-accent-green">
-                      {(p.profiles?.username ?? '??').slice(0, 2).toUpperCase()}
-                    </div>
+                    <UserAvatar username={p.profiles?.username ?? '??'} avatarUrl={p.profiles?.avatar_url ?? null} size="md" />
                     <div className="flex-1">
                       <span className="text-sm font-bold text-white">{p.profiles?.username ?? 'Inconnu'}</span>
                       {p.user_id === user.id && (
                         <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded bg-accent-green/10 text-accent-green font-bold">Toi</span>
                       )}
                     </div>
+                    {p.current_streak > 0 && (
+                      <span className="text-xs text-accent-orange font-bold">{p.current_streak}j</span>
+                    )}
                     <span className="text-sm font-bold text-accent-green">{p.points_earned} pts</span>
-                    <span className="text-xs text-accent-orange font-bold">{p.current_streak}j</span>
                   </Link>
                 ))}
               </div>

@@ -73,19 +73,12 @@ export default async function AdminUsersPage() {
       </div>
 
       <div className="space-y-3">
-        {profiles.map((p, rank) => {
+        {profiles.map((p) => {
           const stats = userStats.get(p.id) ?? { challenges: 0, bestStreak: 0, badgeCount: 0, entryCount: 0 }
           return (
             <Card key={p.id} className={p.is_admin ? 'border-accent-orange/30' : ''}>
               <CardContent className="p-4">
                 <div className="flex items-center gap-4">
-                  {/* Rank */}
-                  <div className="w-8 text-center">
-                    <span className={`text-sm font-black ${rank === 0 ? 'text-yellow-400' : rank === 1 ? 'text-gray-300' : rank === 2 ? 'text-amber-600' : 'text-text-muted'}`}>
-                      #{rank + 1}
-                    </span>
-                  </div>
-
                   {/* Avatar */}
                   <UserAvatar username={p.username} avatarUrl={p.avatar_url} size="sm" />
 

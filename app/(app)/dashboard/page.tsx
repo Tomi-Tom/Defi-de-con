@@ -1,11 +1,11 @@
 import Link from 'next/link'
-import { Flame } from 'lucide-react'
+import { Flame, Target } from 'lucide-react'
 import { requireAuth } from '@/lib/supabase/require-auth'
 import { selectDailyQuote } from '@/lib/utils/quotes'
 import { StreakWidget } from '@/components/dashboard/streak-widget'
 import { PointsWidget } from '@/components/dashboard/points-widget'
-import { RankWidget } from '@/components/dashboard/rank-widget'
 import { StatsGridWidget } from '@/components/dashboard/stats-grid-widget'
+import { Card, CardContent } from '@/components/ui/card'
 import { ActiveChallengesWidget } from '@/components/dashboard/active-challenges-widget'
 import { RecentBadgesWidget } from '@/components/dashboard/recent-badges-widget'
 import { DailyQuoteWidget } from '@/components/dashboard/daily-quote-widget'
@@ -30,7 +30,7 @@ export default async function DashboardPage() {
   lastWeekStart.setDate(lastWeekStart.getDate() - 7)
 
   const [
-    profileRes, participationsRes, rankRes, badgesRes, quotesRes,
+    profileRes, participationsRes, badgesRes, quotesRes,
     todayPointsRes, totalEntriesRes, lastEntryRes, pointsLogRes,
     last14EntriesRes, weeklyPointsRes
   ] = await Promise.all([
@@ -39,7 +39,6 @@ export default async function DashboardPage() {
       .from('challenge_participants')
       .select('challenge_id, current_streak, best_streak, challenges(id, title, start_date, duration_days, status)')
       .eq('user_id', user.id),
-    supabase.from('profiles').select('id, points_total').order('points_total', { ascending: false }),
     supabase
       .from('user_badges')
       .select('badges(name, icon_url)')
@@ -87,7 +86,6 @@ export default async function DashboardPage() {
     best_streak: number
     challenges: { id: string; title: string; start_date: string; duration_days: number; status: string } | null
   }>
-  const rankList = (rankRes.data ?? []) as unknown as Array<{ id: string; points_total: number }>
   const badges = (badgesRes.data ?? []) as unknown as Array<{
     badges: { name: string; icon_url: string } | null
   }>
@@ -110,7 +108,6 @@ export default async function DashboardPage() {
   const last14Entries = (last14EntriesRes.data ?? []) as unknown as Array<{ entry_date: string }>
   const weeklyPointsLog = (weeklyPointsRes.data ?? []) as unknown as Array<{ points: number; created_at: string }>
 
-  const rank = rankList.findIndex(p => p.id === user.id) + 1
   const todayPoints = todayPointsData.reduce((sum, p) => sum + p.points, 0)
   const bestStreak = participations.reduce((max, p) => Math.max(max, p.current_streak), 0)
   const bestStreakEver = participations.reduce((max, p) => Math.max(max, p.best_streak), 0)
@@ -151,10 +148,16 @@ export default async function DashboardPage() {
     { entries: 0, streaks: 0, bonuses: 0 }
   )
 
-  // Points to next rank
-  const myPoints = profile?.points_total ?? 0
-  const rankAbove = rank >= 2 ? rankList[rank - 2] : null
-  const pointsToNext = rankAbove ? Math.max(0, rankAbove.points_total - myPoints) : null
+  // Completion rate: entries logged vs total challenge days elapsed
+  const activeChallengesForCompletion = participations.filter(p => p.challenges?.status === 'active')
+  const totalElapsedDays = activeChallengesForCompletion.reduce((sum, p) => {
+    const c = p.challenges!
+    const elapsed = differenceInDays(new Date(), parseISO(c.start_date)) + 1
+    return sum + Math.min(elapsed, c.duration_days)
+  }, 0)
+  const completionRate = totalElapsedDays > 0
+    ? Math.round((totalEntries / totalElapsedDays) * 100)
+    : 0
 
   // Active challenges
   const today = new Date().toISOString().slice(0, 10)
@@ -233,7 +236,20 @@ export default async function DashboardPage() {
       <div className="animate-slide-up stagger-1 grid grid-cols-2 md:grid-cols-3 gap-3">
         <StreakWidget streak={bestStreak} />
         <PointsWidget points={profile?.points_total ?? 0} todayPoints={todayPoints} breakdown={breakdown} />
-        <RankWidget rank={rank || 1} total={rankList.length} pointsToNext={pointsToNext} />
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-accent-green/10 flex items-center justify-center">
+                <Target size={20} className="text-accent-green" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Completion</div>
+                <div className="text-2xl font-black text-white">{completionRate}%</div>
+                <div className="text-xs text-text-muted">{totalEntries} saisies / {totalElapsedDays}j</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Secondary stats row */}
