@@ -3,7 +3,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { publishChallenge, deleteChallenge } from '@/lib/actions/challenges'
 import Link from 'next/link'
-import { Plus } from 'lucide-react'
+import { Plus, Users, Award, MessageSquareQuote } from 'lucide-react'
 
 export default async function AdminPage() {
   const supabase = await createClient()
@@ -19,6 +19,22 @@ export default async function AdminPage() {
         <h2 className="text-2xl font-black">Admin — Defis</h2>
         <Link href="/admin/challenges/new">
           <Button><Plus size={16} className="mr-1" /> Nouveau defi</Button>
+        </Link>
+      </div>
+
+      {/* Quick nav */}
+      <div className="grid grid-cols-3 gap-3">
+        <Link href="/admin/users" className="flex items-center gap-2 p-3 rounded-xl bg-bg-tertiary border border-border hover:border-accent-green/30 transition-all">
+          <Users size={18} className="text-accent-green" />
+          <span className="text-sm font-bold text-white">Utilisateurs</span>
+        </Link>
+        <Link href="/admin/badges" className="flex items-center gap-2 p-3 rounded-xl bg-bg-tertiary border border-border hover:border-accent-orange/30 transition-all">
+          <Award size={18} className="text-accent-orange" />
+          <span className="text-sm font-bold text-white">Badges</span>
+        </Link>
+        <Link href="/admin/quotes" className="flex items-center gap-2 p-3 rounded-xl bg-bg-tertiary border border-border hover:border-yellow-400/30 transition-all">
+          <MessageSquareQuote size={18} className="text-yellow-400" />
+          <span className="text-sm font-bold text-white">Citations</span>
         </Link>
       </div>
 
