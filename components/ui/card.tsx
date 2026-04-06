@@ -5,9 +5,9 @@ interface CardProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 export function Card({ variant = 'default', className = '', children, ...props }: CardProps) {
-  const base = 'rounded-[12px] border transition-all duration-200'
+  const base = 'rounded-2xl border transition-all duration-200'
   const variants = {
-    default: 'bg-bg-secondary border-border hover:border-border/60 hover:shadow-lg hover:shadow-black/20',
+    default: 'bg-bg-secondary/80 backdrop-blur-sm border-border hover:border-border/60',
     accent: 'bg-gradient-to-br from-accent-green to-accent-green-dark border-transparent',
   }
 

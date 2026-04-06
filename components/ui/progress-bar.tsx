@@ -15,11 +15,13 @@ export function ProgressBar({ value, label, showPercentage = true }: ProgressBar
           {showPercentage && <span className="text-sm font-bold text-accent-green">{Math.round(clamped)}%</span>}
         </div>
       )}
-      <div className="h-2 rounded-full bg-bg-tertiary overflow-hidden">
+      <div className="h-2.5 rounded-full bg-bg-tertiary/50 overflow-hidden">
         <div
-          className="h-full rounded-full bg-gradient-to-r from-accent-green to-accent-green-dark transition-all duration-500"
+          className="h-full rounded-full bg-gradient-to-r from-accent-green to-accent-green-dark transition-all duration-700 relative"
           style={{ width: `${clamped}%` }}
-        />
+        >
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/10" />
+        </div>
       </div>
     </div>
   )

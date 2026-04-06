@@ -34,14 +34,16 @@ export function SignupForm() {
   const config = strengthConfig[strength]
 
   return (
-    <form action={formAction} className="flex flex-col gap-4 w-full max-w-sm" key={JSON.stringify(state.values)}>
-      <h1 className="text-3xl font-black tracking-tight">
-        <span className="text-accent-green">DEFI</span>DECON
-      </h1>
-      <p className="text-text-muted text-sm mb-4">Cree ton compte et rejoins le defi</p>
+    <form action={formAction} className="flex flex-col gap-5 w-full max-w-sm" key={JSON.stringify(state.values)}>
+      <div className="text-center mb-2">
+        <h1 className="text-4xl font-black tracking-tighter mb-1">
+          <span className="text-accent-green">DEFI</span><span className="text-white">DE</span><span className="text-accent-orange">CON</span>
+        </h1>
+        <p className="text-text-muted text-sm">Cree ton compte et rejoins le defi</p>
+      </div>
 
       {state.error && (
-        <div className="bg-error/10 border border-error/20 rounded-[10px] px-4 py-2 text-sm text-error">
+        <div className="bg-error/10 border border-error/20 rounded-xl px-4 py-2 text-sm text-error">
           {state.error}
         </div>
       )}
