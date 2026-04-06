@@ -3,6 +3,7 @@ import { notFound, redirect } from 'next/navigation'
 import { DailyEntryForm } from '@/components/challenges/daily-entry-form'
 import { getTodayUTC, getYesterdayUTC } from '@/lib/utils/dates'
 import { Flame } from 'lucide-react'
+import { DeleteEntryButton } from '@/components/challenges/delete-entry-button'
 import { addDays, format, parseISO, isBefore } from 'date-fns'
 
 type ChallengeWithFields = {
@@ -147,6 +148,12 @@ export default async function EntryPage(props: PageProps<'/challenges/[id]/entry
         quotes={quotesRes.data ?? []}
         goals={goalInfos}
       />
+
+      {existingValues.length > 0 && (
+        <div className="flex justify-center pt-2 pb-4">
+          <DeleteEntryButton challengeId={id} />
+        </div>
+      )}
     </div>
   )
 }
