@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useRef } from 'react'
 import { signup, type AuthState } from '@/lib/actions/auth'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -8,9 +8,10 @@ import Link from 'next/link'
 
 export function SignupForm() {
   const [state, formAction, pending] = useActionState<AuthState, FormData>(signup, {})
+  const formRef = useRef<HTMLFormElement>(null)
 
   return (
-    <form action={formAction} className="flex flex-col gap-4 w-full max-w-sm">
+    <form ref={formRef} action={formAction} className="flex flex-col gap-4 w-full max-w-sm" key={JSON.stringify(state.values)}>
       <h1 className="text-3xl font-black tracking-tight">
         <span className="text-accent-green">DEFI</span>DECON
       </h1>
