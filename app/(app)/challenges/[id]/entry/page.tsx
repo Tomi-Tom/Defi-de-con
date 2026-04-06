@@ -33,7 +33,7 @@ export default async function EntryPage(props: PageProps<'/challenges/[id]/entry
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const challenge = (challengeQuery as any).data as ChallengeWithFields
 
-  const [participationRes, existingEntryRes, quotesRes, goalsRes, pastEntriesRes, yesterdayEntryRes, todaySubmittersRes] = await Promise.all([
+  const [participationRes, existingEntryRes, quotesRes, goalsRes, pastEntriesRes, yesterdayEntryRes, todaySubmittersRes, adjustmentsRes] = await Promise.all([
     supabase.from('challenge_participants').select('id').eq('challenge_id', id).eq('user_id', user.id).single(),
     supabase.from('daily_entries').select('id').eq('challenge_id', id).eq('user_id', user.id).eq('entry_date', today).single(),
     supabase.from('motivational_quotes').select('id, text, author, context'),
@@ -47,6 +47,7 @@ export default async function EntryPage(props: PageProps<'/challenges/[id]/entry
       .order('entry_date'),
     supabase.from('daily_entries').select('id').eq('challenge_id', id).eq('user_id', user.id).eq('entry_date', yesterday).single(),
     supabase.from('daily_entries').select('user_id, profiles(username)').eq('challenge_id', id).eq('entry_date', today),
+    supabase.from('participant_adjustments').select('field_id, adjustment').eq('challenge_id', id).eq('user_id', user.id),
   ])
 
   if (!participationRes.data) redirect(`/challenges/${id}`)
@@ -87,34 +88,50 @@ export default async function EntryPage(props: PageProps<'/challenges/[id]/entry
   type Submitter = { user_id: string; profiles: { username: string } | null }
   const todaySubmitters = (todaySubmittersRes.data ?? []) as unknown as Submitter[]
 
-  // Compute goals and carry-over per numeric field
+  // Compute goals and carry-over per numeric field, including admin adjustments
   type GoalRow = { field_id: string; goal_date: string; target_value: number }
   type PastEntry = { entry_date: string; entry_values: Array<{ field_id: string; value_number: number | null }> }
+  type AdjustmentRow = { field_id: string; adjustment: number }
 
   const allGoals = (goalsRes.data ?? []) as unknown as GoalRow[]
   const pastEntries = (pastEntriesRes.data ?? []) as unknown as PastEntry[]
+  const userAdjustments = (adjustmentsRes.data ?? []) as unknown as AdjustmentRow[]
 
-  const numericFields = fields.filter(f => f.type === 'number')
+  // Sum adjustments per field (positive = avance, reduces carry-over)
+  const adjustmentByField = new Map<string, number>()
+  for (const a of userAdjustments) {
+    adjustmentByField.set(a.field_id, (adjustmentByField.get(a.field_id) ?? 0) + a.adjustment)
+  }
+
+  const numericFields = fields.filter(f => f.type === 'number' || f.type === 'duration')
 
   const goalInfos = numericFields.map(field => {
     const fieldGoals = allGoals.filter(g => g.field_id === field.id)
-    if (fieldGoals.length === 0) return { fieldId: field.id, todayTarget: null, carryOver: 0 }
+    if (fieldGoals.length === 0) return { fieldId: field.id, todayTarget: null, carryOver: 0, adjustment: 0 }
 
-    // Today's goal
     const todayGoal = fieldGoals.find(g => g.goal_date === today)
     const todayTarget = todayGoal?.target_value ?? null
 
-    // Calculate carry-over: sum of (target - actual) for past days where target > actual
+    // Calculate carry-over from past days
     let carryOver = 0
     for (const goal of fieldGoals) {
-      if (goal.goal_date >= today) continue // only past days
+      if (goal.goal_date >= today) continue
       const entry = pastEntries.find(e => e.entry_date === goal.goal_date)
       const actual = entry?.entry_values?.find(v => v.field_id === field.id)?.value_number ?? 0
       const deficit = goal.target_value - actual
-      if (deficit > 0) carryOver += deficit
+      carryOver += deficit // can be negative (surplus)
     }
 
-    return { fieldId: field.id, todayTarget, carryOver: Math.round(carryOver * 100) / 100 }
+    // Apply admin adjustment (positive = avance = reduces carry-over)
+    const adjustment = adjustmentByField.get(field.id) ?? 0
+    carryOver -= adjustment
+
+    return {
+      fieldId: field.id,
+      todayTarget,
+      carryOver: Math.round(carryOver * 100) / 100,
+      adjustment,
+    }
   })
 
   return (

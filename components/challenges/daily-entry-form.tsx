@@ -31,7 +31,8 @@ interface ExistingValue {
 interface GoalInfo {
   fieldId: string
   todayTarget: number | null
-  carryOver: number // accumulated deficit from previous days
+  carryOver: number // accumulated deficit from previous days (negative = avance)
+  adjustment?: number // admin bonus/malus applied
 }
 
 interface DailyEntryFormProps {
@@ -184,7 +185,12 @@ export function DailyEntryForm({ challengeId, fields, existingValues = [], yeste
                           Retard : +{goalInfo.carryOver} a rattraper
                         </span>
                       )}
-                      {effectiveTarget !== null && effectiveTarget > 0 && goalInfo.carryOver > 0 && (
+                      {goalInfo.adjustment !== undefined && goalInfo.adjustment !== 0 && (
+                        <span className={`flex items-center gap-1 ${goalInfo.adjustment > 0 ? 'text-accent-green' : 'text-accent-orange'}`}>
+                          {goalInfo.adjustment > 0 ? 'Bonus' : 'Handicap'} : {goalInfo.adjustment > 0 ? '+' : ''}{goalInfo.adjustment}
+                        </span>
+                      )}
+                      {effectiveTarget !== null && effectiveTarget > 0 && (goalInfo.carryOver > 0 || (goalInfo.adjustment ?? 0) !== 0) && (
                         <span className="font-bold text-white">
                           Total : {effectiveTarget}
                         </span>

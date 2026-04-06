@@ -1,11 +1,15 @@
 import { requireAdmin } from '@/lib/supabase/require-auth'
 import { notFound } from 'next/navigation'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Select } from '@/components/ui/select'
 import { GoalsExcelManager } from '@/components/challenges/goals-excel-manager'
 import { getGoalsForChallenge } from '@/lib/actions/goals'
+import { createAdjustment, deleteAdjustment } from '@/lib/actions/adjustments'
 import { format, parseISO, formatDistanceToNow } from 'date-fns'
 import { fr } from 'date-fns/locale'
-import { Settings, Target, Clock, Activity } from 'lucide-react'
+import { Settings, Target, Clock, Activity, Scale, Plus, Trash2 } from 'lucide-react'
 
 export default async function EditChallengePage(props: PageProps<'/admin/challenges/[id]/edit'>) {
   const { id } = await props.params
@@ -32,6 +36,18 @@ export default async function EditChallengePage(props: PageProps<'/admin/challen
   const challenge = challengeRaw as unknown as ChallengeWithFields
 
   const goals = await getGoalsForChallenge(id)
+
+  // Fetch participants and adjustments
+  type Participant = { user_id: string; profiles: { username: string } | null }
+  type Adjustment = { id: string; user_id: string; field_id: string; adjustment: number; reason: string; created_at: string; profiles: { username: string } | null }
+
+  const [participantsRes, adjustmentsRes] = await Promise.all([
+    supabase.from('challenge_participants').select('user_id, profiles(username)').eq('challenge_id', id),
+    supabase.from('participant_adjustments').select('id, user_id, field_id, adjustment, reason, created_at, profiles(username)').eq('challenge_id', id).order('created_at', { ascending: false }),
+  ])
+
+  const participants = (participantsRes.data ?? []) as unknown as Participant[]
+  const adjustments = (adjustmentsRes.data ?? []) as unknown as Adjustment[]
 
   const { data: recentEntriesRaw } = await supabase
     .from('daily_entries')
@@ -95,6 +111,79 @@ export default async function EditChallengePage(props: PageProps<'/admin/challen
           type: f.type,
         }))}
       />
+
+      {/* Adjustments — bonus/malus */}
+      {numericFields.length > 0 && participants.length > 0 && (
+        <Card>
+          <CardHeader>
+            <h3 className="text-sm font-black uppercase tracking-widest text-text-muted flex items-center gap-2">
+              <Scale size={14} />
+              Bonus / Handicap sur les objectifs
+            </h3>
+          </CardHeader>
+          <CardContent>
+            <p className="text-xs text-text-muted mb-4">
+              Positif = avance (reduit les objectifs du participant). Negatif = handicap (augmente les objectifs).
+            </p>
+            <form action={async (fd: FormData) => {
+              'use server'
+              fd.append('challenge_id', id)
+              await createAdjustment(fd)
+            }} className="grid grid-cols-1 md:grid-cols-5 gap-2 mb-4">
+              <Select name="user_id" required>
+                <option value="">Participant</option>
+                {participants.map(p => (
+                  <option key={p.user_id} value={p.user_id}>{p.profiles?.username ?? 'Inconnu'}</option>
+                ))}
+              </Select>
+              <Select name="field_id" required>
+                <option value="">Champ</option>
+                {numericFields.map(f => (
+                  <option key={f.id} value={f.id}>{f.label}</option>
+                ))}
+              </Select>
+              <Input name="adjustment" type="number" placeholder="Ex: 20 ou -10" required />
+              <Input name="reason" placeholder="Raison (optionnel)" />
+              <Button type="submit" size="sm" className="h-full">
+                <Plus size={14} className="mr-1" /> Appliquer
+              </Button>
+            </form>
+
+            {adjustments.length > 0 && (
+              <div className="space-y-2">
+                {adjustments.map(a => {
+                  const fieldLabel = challenge.challenge_fields.find(f => f.id === a.field_id)?.label ?? '?'
+                  const isBonus = a.adjustment > 0
+                  return (
+                    <div key={a.id} className={`flex items-center gap-3 p-2.5 rounded-xl border ${isBonus ? 'bg-accent-green/5 border-accent-green/20' : 'bg-accent-orange/5 border-accent-orange/20'}`}>
+                      <div className={`text-sm font-black ${isBonus ? 'text-accent-green' : 'text-accent-orange'}`}>
+                        {isBonus ? '+' : ''}{a.adjustment}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <span className="text-sm font-bold text-white">{a.profiles?.username ?? 'Inconnu'}</span>
+                        <span className="text-text-muted text-sm"> — {fieldLabel}</span>
+                        {a.reason && <span className="text-text-muted text-xs ml-2">({a.reason})</span>}
+                      </div>
+                      <span className="text-[10px] text-text-muted">{format(parseISO(a.created_at), 'd MMM', { locale: fr })}</span>
+                      <form action={async () => {
+                        'use server'
+                        await deleteAdjustment(a.id)
+                      }}>
+                        <button type="submit" className="text-text-muted hover:text-error transition-colors">
+                          <Trash2 size={14} />
+                        </button>
+                      </form>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+            {adjustments.length === 0 && (
+              <p className="text-xs text-text-muted text-center py-2">Aucun ajustement pour le moment.</p>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Participant activity feed */}
       <Card>
