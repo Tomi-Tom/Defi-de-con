@@ -34,7 +34,7 @@ export default async function EntryPage(props: PageProps<'/challenges/[id]/entry
   const [participationRes, existingEntryRes, quotesRes, goalsRes, pastEntriesRes] = await Promise.all([
     supabase.from('challenge_participants').select('id').eq('challenge_id', id).eq('user_id', user.id).single(),
     supabase.from('daily_entries').select('id').eq('challenge_id', id).eq('user_id', user.id).eq('entry_date', today).single(),
-    supabase.from('motivational_quotes').select('*'),
+    supabase.from('motivational_quotes').select('id, text, author, context'),
     supabase.from('challenge_goals').select('field_id, goal_date, target_value').eq('challenge_id', id).order('goal_date'),
     supabase
       .from('daily_entries')

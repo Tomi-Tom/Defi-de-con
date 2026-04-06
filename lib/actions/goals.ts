@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { requireAdminAction } from '@/lib/supabase/require-auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { refresh } from 'next/cache'
 
@@ -11,16 +12,8 @@ export type GoalRow = {
 }
 
 export async function importGoals(challengeId: string, goals: GoalRow[]) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { error: 'Non authentifie' }
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('is_admin')
-    .eq('id', user.id)
-    .single()
-  if (!profile?.is_admin) return { error: 'Non autorise' }
+  const { error: authError } = await requireAdminAction()
+  if (authError) return { error: authError }
 
   const admin = createAdminClient()
 

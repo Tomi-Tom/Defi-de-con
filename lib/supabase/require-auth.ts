@@ -14,3 +14,27 @@ export async function requireAuthAction() {
   if (!user) return { supabase: null, user: null, error: 'Non authentifie' as const }
   return { supabase, user, error: null }
 }
+
+export async function requireAdmin() {
+  const { supabase, user } = await requireAuth()
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('is_admin')
+    .eq('id', user.id)
+    .single()
+  if (!profile?.is_admin) redirect('/dashboard')
+  return { supabase, user }
+}
+
+export async function requireAdminAction() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { supabase: null, user: null, error: 'Non authentifie' as const }
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('is_admin')
+    .eq('id', user.id)
+    .single()
+  if (!profile?.is_admin) return { supabase: null, user: null, error: 'Non autorise' as const }
+  return { supabase, user, error: null }
+}

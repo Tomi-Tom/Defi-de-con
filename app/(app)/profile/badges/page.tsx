@@ -1,4 +1,5 @@
 import { requireAuth } from '@/lib/supabase/require-auth'
+import { StatCard } from '@/components/ui/stat-card'
 import { Award, Lock, Check, Flame, Trophy, Star, Zap } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import { fr } from 'date-fns/locale'
@@ -17,7 +18,7 @@ export default async function BadgesPage() {
   type UserBadge = { badge_id: string; earned_at: string; challenge_id: string | null }
 
   const [allBadgesRes, userBadgesRes, participationsRes, entriesCountRes, profileRes] = await Promise.all([
-    supabase.from('badges').select('*').order('condition_value'),
+    supabase.from('badges').select('id, name, description, icon_url, condition_type, condition_value').order('condition_value'),
     supabase.from('user_badges').select('badge_id, earned_at, challenge_id').eq('user_id', user.id),
     supabase.from('challenge_participants').select('best_streak, challenges(status)').eq('user_id', user.id),
     supabase.from('daily_entries').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
@@ -99,13 +100,14 @@ export default async function BadgesPage() {
           const total = allBadges.filter(b => b.condition_type === cat).length
           const earned = allBadges.filter(b => b.condition_type === cat && earnedIds.has(b.id)).length
           return (
-            <div key={cat} className="bg-bg-secondary rounded-xl border border-border p-3 text-center">
-              <div className={`w-8 h-8 rounded-lg ${config.bg} flex items-center justify-center mx-auto mb-1`}>
-                <config.icon size={16} className={config.color} />
-              </div>
-              <div className="text-sm font-black text-white">{earned} / {total}</div>
-              <div className="text-[10px] font-bold uppercase tracking-widest text-text-muted">{config.label}</div>
-            </div>
+            <StatCard
+              key={cat}
+              label={config.label}
+              value={`${earned} / ${total}`}
+              icon={config.icon}
+              color={config.color}
+              bg={config.bg}
+            />
           )
         })}
       </div>

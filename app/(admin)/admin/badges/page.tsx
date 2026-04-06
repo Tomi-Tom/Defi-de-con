@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { requireAdmin } from '@/lib/supabase/require-auth'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { BadgeDisplay } from '@/components/ui/badge-display'
 import { Button } from '@/components/ui/button'
@@ -8,10 +8,10 @@ import { createBadge, deleteBadge, awardBadgeToUser, revokeBadgeFromUser } from 
 import { Award, Plus, Trash2, Gift, Users } from 'lucide-react'
 
 export default async function AdminBadgesPage() {
-  const supabase = await createClient()
+  const { supabase } = await requireAdmin()
 
   const [badgesRes, usersRes, awardedRes] = await Promise.all([
-    supabase.from('badges').select('*').order('name'),
+    supabase.from('badges').select('id, name, description, icon_url, condition_type, condition_value').order('name'),
     supabase.from('profiles').select('id, username').order('username'),
     supabase.from('user_badges').select('id, user_id, badge_id, challenge_id, earned_at, profiles(username), badges(name, icon_url)').order('earned_at', { ascending: false }).limit(50),
   ])

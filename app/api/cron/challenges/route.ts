@@ -27,22 +27,22 @@ export async function GET(request: NextRequest) {
       .in('id', overdueIds)
 
     // Award Podium badges for completed challenges
-    for (const challengeId of overdueIds) {
-      const { data: top3 } = await admin
-        .from('challenge_participants')
-        .select('user_id')
-        .eq('challenge_id', challengeId)
-        .order('points_earned', { ascending: false })
-        .limit(3)
+    const { data: podiumBadge } = await admin
+      .from('badges')
+      .select('id')
+      .eq('name', 'Podium')
+      .single()
 
-      if (top3) {
-        const { data: podiumBadge } = await admin
-          .from('badges')
-          .select('id')
-          .eq('name', 'Podium')
-          .single()
+    if (podiumBadge) {
+      for (const challengeId of overdueIds) {
+        const { data: top3 } = await admin
+          .from('challenge_participants')
+          .select('user_id')
+          .eq('challenge_id', challengeId)
+          .order('points_earned', { ascending: false })
+          .limit(3)
 
-        if (podiumBadge) {
+        if (top3) {
           for (const participant of top3) {
             // Check if badge already awarded (can't use upsert with functional unique constraint)
             const { data: existing } = await admin

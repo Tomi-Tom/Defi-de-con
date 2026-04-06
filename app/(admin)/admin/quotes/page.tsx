@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { requireAdmin } from '@/lib/supabase/require-auth'
 import { Card, CardContent } from '@/components/ui/card'
 import { MessageSquareQuote, Flame, Trophy, TrendingUp, Check, AlertTriangle } from 'lucide-react'
 
@@ -11,8 +11,8 @@ const contextConfig: Record<string, { label: string; icon: React.ElementType; co
 }
 
 export default async function AdminQuotesPage() {
-  const supabase = await createClient()
-  const { data: quotes } = await supabase.from('motivational_quotes').select('*').order('context')
+  const { supabase } = await requireAdmin()
+  const { data: quotes } = await supabase.from('motivational_quotes').select('id, text, author, context').order('context')
 
   type Quote = NonNullable<typeof quotes>[number]
   const grouped = (quotes ?? []).reduce((acc, q) => {

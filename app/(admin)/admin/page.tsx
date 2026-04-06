@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { requireAdmin } from '@/lib/supabase/require-auth'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { publishChallenge, deleteChallenge } from '@/lib/actions/challenges'
@@ -8,7 +8,7 @@ import { format, parseISO } from 'date-fns'
 import { fr } from 'date-fns/locale'
 
 export default async function AdminPage() {
-  const supabase = await createClient()
+  const { supabase } = await requireAdmin()
 
   const [challengesRes, usersCount, badgesCount, quotesCount, entriesCount] = await Promise.all([
     supabase

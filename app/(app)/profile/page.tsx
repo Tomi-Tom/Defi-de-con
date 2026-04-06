@@ -1,5 +1,6 @@
 import { requireAuth } from '@/lib/supabase/require-auth'
 import { BadgeDisplay } from '@/components/ui/badge-display'
+import { StatCard } from '@/components/ui/stat-card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
@@ -43,22 +44,12 @@ export default async function ProfilePage() {
 
       {/* Stats grid */}
       <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
-        {[
-          { label: 'Points', value: profile.points_total, icon: Star, color: 'text-accent-green', bg: 'bg-accent-green/10' },
-          { label: 'Badges', value: badges.length, icon: Award, color: 'text-yellow-400', bg: 'bg-yellow-400/10' },
-          { label: 'Defis', value: challenges.length, icon: Trophy, color: 'text-accent-orange', bg: 'bg-accent-orange/10' },
-          { label: 'Entrees', value: totalEntries, icon: Calendar, color: 'text-purple-400', bg: 'bg-purple-400/10' },
-          { label: 'Best streak', value: `${bestStreakEver}j`, icon: Flame, color: 'text-accent-orange', bg: 'bg-accent-orange/10' },
-          { label: 'Rang', value: `#${rank}`, icon: Crown, color: 'text-yellow-400', bg: 'bg-yellow-400/10' },
-        ].map(s => (
-          <div key={s.label} className="bg-bg-secondary rounded-xl border border-border p-3 text-center">
-            <div className={`w-8 h-8 rounded-lg ${s.bg} flex items-center justify-center mx-auto mb-1.5`}>
-              <s.icon size={16} className={s.color} />
-            </div>
-            <div className="text-lg font-black text-white">{s.value}</div>
-            <div className="text-[10px] font-bold uppercase tracking-widest text-text-muted">{s.label}</div>
-          </div>
-        ))}
+        <StatCard label="Points" value={profile.points_total} icon={Star} color="text-accent-green" bg="bg-accent-green/10" />
+        <StatCard label="Badges" value={badges.length} icon={Award} color="text-yellow-400" bg="bg-yellow-400/10" />
+        <StatCard label="Defis" value={challenges.length} icon={Trophy} color="text-accent-orange" bg="bg-accent-orange/10" />
+        <StatCard label="Entrees" value={totalEntries} icon={Calendar} color="text-purple-400" bg="bg-purple-400/10" />
+        <StatCard label="Best streak" value={`${bestStreakEver}j`} icon={Flame} color="text-accent-orange" bg="bg-accent-orange/10" />
+        <StatCard label="Rang" value={`#${rank}`} icon={Crown} color="text-yellow-400" bg="bg-yellow-400/10" />
       </div>
 
       {/* Badges preview */}

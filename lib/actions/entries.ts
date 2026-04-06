@@ -54,7 +54,7 @@ export async function submitEntry(input: SubmitEntryInput): Promise<EntryResult>
   if (existingEntry) {
     // Update existing entry values (batch upsert)
     entryId = existingEntry.id
-    await supabase.from('entry_values').upsert(
+    const { error: upsertError } = await supabase.from('entry_values').upsert(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       values.map(val => ({
         entry_id: entryId,
@@ -66,6 +66,7 @@ export async function submitEntry(input: SubmitEntryInput): Promise<EntryResult>
       })) as any,
       { onConflict: 'entry_id,field_id' }
     )
+    if (upsertError) return { error: upsertError.message }
 
     refresh()
     return { success: true, currentStreak: participation.current_streak }
@@ -82,7 +83,7 @@ export async function submitEntry(input: SubmitEntryInput): Promise<EntryResult>
   entryId = newEntry.id
 
   // Insert values
-  await supabase.from('entry_values').insert(
+  const { error: insertError } = await supabase.from('entry_values').insert(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     values.map(v => ({
       entry_id: entryId,
@@ -93,6 +94,7 @@ export async function submitEntry(input: SubmitEntryInput): Promise<EntryResult>
       value_file_url: v.value_file_url,
     })) as any
   )
+  if (insertError) return { error: insertError.message }
 
   // Calculate streak and check first entry in parallel
   const [{ data: yesterdayEntry }, { count }] = await Promise.all([
@@ -113,10 +115,11 @@ export async function submitEntry(input: SubmitEntryInput): Promise<EntryResult>
   const bestStreak = Math.max(newStreak, participation.best_streak)
   const isFirstEntry = count === 1
 
-  await supabase
+  const { error: updateError } = await supabase
     .from('challenge_participants')
     .update({ current_streak: newStreak, best_streak: bestStreak })
     .eq('id', participation.id)
+  if (updateError) return { error: updateError.message }
 
   // Award points
   const { totalAwarded, awards } = await awardPoints({

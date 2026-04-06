@@ -29,7 +29,7 @@ export default async function DashboardPage() {
       .eq('user_id', user.id)
       .order('earned_at', { ascending: false })
       .limit(5),
-    supabase.from('motivational_quotes').select('*').eq('context', 'daily'),
+    supabase.from('motivational_quotes').select('id, text, author, context').eq('context', 'daily'),
     supabase
       .from('points_log')
       .select('points')

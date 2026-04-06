@@ -1,14 +1,13 @@
-import { createClient } from '@/lib/supabase/server'
+import { requireAdmin } from '@/lib/supabase/require-auth'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { BadgeDisplay } from '@/components/ui/badge-display'
 import { Button } from '@/components/ui/button'
 import { Users, Shield, ShieldOff, Trophy, Flame, Star } from 'lucide-react'
 import Link from 'next/link'
-import { createAdminClient } from '@/lib/supabase/admin'
-import { refresh } from 'next/cache'
+import { toggleAdminRole } from '@/lib/actions/admin-badges'
 
 export default async function AdminUsersPage() {
-  const supabase = await createClient()
+  const { supabase } = await requireAdmin()
 
   type UserProfile = {
     id: string
@@ -33,7 +32,7 @@ export default async function AdminUsersPage() {
   }
 
   const [profilesRes, participationsRes, badgesRes, entriesCountRes] = await Promise.all([
-    supabase.from('profiles').select('*').order('points_total', { ascending: false }),
+    supabase.from('profiles').select('id, username, avatar_url, is_admin, points_total, entry_mode, created_at').order('points_total', { ascending: false }),
     supabase.from('challenge_participants').select('user_id, current_streak, best_streak, challenge_id'),
     supabase.from('user_badges').select('user_id, badges(name, icon_url)'),
     supabase.from('daily_entries').select('user_id'),
@@ -135,9 +134,7 @@ export default async function AdminUsersPage() {
                     </Link>
                     <form action={async () => {
                       'use server'
-                      const admin = createAdminClient()
-                      await admin.from('profiles').update({ is_admin: !p.is_admin }).eq('id', p.id)
-                      refresh()
+                      await toggleAdminRole(p.id)
                     }}>
                       <Button variant="ghost" size="sm" type="submit" title={p.is_admin ? 'Retirer admin' : 'Rendre admin'}>
                         {p.is_admin ? <ShieldOff size={14} /> : <Shield size={14} />}

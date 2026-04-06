@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { requireAdmin } from '@/lib/supabase/require-auth'
 import { notFound } from 'next/navigation'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { GoalsExcelManager } from '@/components/challenges/goals-excel-manager'
@@ -9,7 +9,7 @@ import { Settings, Target } from 'lucide-react'
 
 export default async function EditChallengePage(props: PageProps<'/admin/challenges/[id]/edit'>) {
   const { id } = await props.params
-  const supabase = await createClient()
+  const { supabase } = await requireAdmin()
 
   type ChallengeWithFields = {
     id: string

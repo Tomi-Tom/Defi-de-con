@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import { importGoals, type GoalRow } from '@/lib/actions/goals'
 import { Download, Upload, FileSpreadsheet } from 'lucide-react'
-import * as XLSX from 'xlsx'
 import { addDays, format } from 'date-fns'
 
 interface Field {
@@ -30,7 +29,8 @@ export function GoalsExcelManager({ challengeId, challengeTitle, startDate, dura
   // Only numeric fields have goals
   const numericFields = fields.filter(f => f.type === 'number')
 
-  const handleExport = () => {
+  const handleExport = async () => {
+    const XLSX = await import('xlsx')
     // Generate dates array
     const dates: string[] = []
     const start = new Date(startDate)
@@ -73,7 +73,8 @@ export function GoalsExcelManager({ challengeId, challengeTitle, startDate, dura
     if (!file) return
 
     const reader = new FileReader()
-    reader.onload = (evt) => {
+    reader.onload = async (evt) => {
+      const XLSX = await import('xlsx')
       const data = evt.target?.result
       if (!data) return
 

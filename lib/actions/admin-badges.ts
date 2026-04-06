@@ -1,21 +1,13 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
+import { requireAdminAction } from '@/lib/supabase/require-auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { refresh } from 'next/cache'
 
 export async function createBadge(formData: FormData) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { user, error: authError } = await requireAdminAction()
+  if (authError) return { error: authError }
   if (!user) return { error: 'Non authentifie' }
-
-  // Verify admin
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('is_admin')
-    .eq('id', user.id)
-    .single()
-  if (!profile?.is_admin) return { error: 'Non autorise' }
 
   const name = formData.get('name') as string
   const description = formData.get('description') as string
@@ -41,16 +33,8 @@ export async function createBadge(formData: FormData) {
 }
 
 export async function deleteBadge(badgeId: string) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { error: 'Non authentifie' }
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('is_admin')
-    .eq('id', user.id)
-    .single()
-  if (!profile?.is_admin) return { error: 'Non autorise' }
+  const { error: authError } = await requireAdminAction()
+  if (authError) return { error: authError }
 
   const admin = createAdminClient()
   const { error } = await admin.from('badges').delete().eq('id', badgeId)
@@ -61,16 +45,8 @@ export async function deleteBadge(badgeId: string) {
 }
 
 export async function awardBadgeToUser(formData: FormData) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { error: 'Non authentifie' }
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('is_admin')
-    .eq('id', user.id)
-    .single()
-  if (!profile?.is_admin) return { error: 'Non autorise' }
+  const { error: authError } = await requireAdminAction()
+  if (authError) return { error: authError }
 
   const badge_id = formData.get('badge_id') as string
   const user_id = formData.get('user_id') as string
@@ -109,19 +85,37 @@ export async function awardBadgeToUser(formData: FormData) {
 }
 
 export async function revokeBadgeFromUser(userBadgeId: string) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { error: 'Non authentifie' }
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('is_admin')
-    .eq('id', user.id)
-    .single()
-  if (!profile?.is_admin) return { error: 'Non autorise' }
+  const { error: authError } = await requireAdminAction()
+  if (authError) return { error: authError }
 
   const admin = createAdminClient()
   const { error } = await admin.from('user_badges').delete().eq('id', userBadgeId)
+  if (error) return { error: `Erreur: ${error.message}` }
+
+  refresh()
+  return { success: true }
+}
+
+export async function toggleAdminRole(userId: string) {
+  const { error: authError } = await requireAdminAction()
+  if (authError) return { error: authError }
+
+  const admin = createAdminClient()
+
+  // Get current admin status
+  const { data: profile } = await admin
+    .from('profiles')
+    .select('is_admin')
+    .eq('id', userId)
+    .single()
+
+  if (!profile) return { error: 'Utilisateur introuvable' }
+
+  const { error } = await admin
+    .from('profiles')
+    .update({ is_admin: !profile.is_admin })
+    .eq('id', userId)
+
   if (error) return { error: `Erreur: ${error.message}` }
 
   refresh()
