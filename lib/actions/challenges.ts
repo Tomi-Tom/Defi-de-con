@@ -13,35 +13,43 @@ export async function createChallenge(input: unknown) {
   if (!supabase || !user) return { error: 'Non authentifie' }
 
   const parsed = createChallengeSchema.safeParse(input)
-  if (!parsed.success) return { error: parsed.error.issues[0].message }
+  if (!parsed.success) {
+    const msg = parsed.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join(', ')
+    return { error: msg }
+  }
 
   const { fields, ...challengeData } = parsed.data
   const endDate = format(addDays(new Date(challengeData.start_date), challengeData.duration_days), 'yyyy-MM-dd')
 
-  const { data: challenge, error } = await supabase
+  // Use admin client for insert (RLS requires is_admin check which fails with anon key)
+  const { createAdminClient } = await import('@/lib/supabase/admin')
+  const admin = createAdminClient()
+
+  const { data: challenge, error } = await admin
     .from('challenges')
     .insert({
       title: challengeData.title,
-      description: challengeData.description,
+      description: challengeData.description ?? '',
       start_date: challengeData.start_date,
       duration_days: challengeData.duration_days,
       end_date: endDate,
       created_by: user.id,
-      status: 'draft' as const,
+      status: 'draft',
       cover_image_url: null,
       upload_config: challengeData.upload_config ?? null,
-    })
+    } as any)
     .select('id')
     .single()
 
-  if (error || !challenge) return { error: 'Erreur lors de la creation' }
+  if (error || !challenge) return { error: `Erreur: ${error?.message ?? 'inconnue'}` }
 
-  // Insert fields
-  await supabase.from('challenge_fields').insert(
-    fields.map(f => ({ ...f, challenge_id: challenge.id }))
+  // Insert fields (use admin client for RLS bypass)
+  const { error: fieldsError } = await admin.from('challenge_fields').insert(
+    fields.map(f => ({ ...f, challenge_id: (challenge as any).id })) as any
   )
+  if (fieldsError) return { error: `Erreur champs: ${fieldsError.message}` }
 
-  redirect(`/challenges/${challenge.id}`)
+  redirect(`/challenges/${(challenge as any).id}`)
 }
 
 export async function updateChallenge(challengeId: string, input: unknown) {

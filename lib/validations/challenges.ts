@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 export const challengeFieldSchema = z.object({
-  name: z.string().min(1).regex(/^[a-z_]+$/, 'snake_case uniquement'),
+  name: z.string().min(1).regex(/^[a-z0-9_]+$/, 'snake_case uniquement'),
   label: z.string().min(1, 'Label requis'),
   type: z.enum(['number', 'text', 'date', 'boolean', 'file', 'image']),
   required: z.boolean().default(true),

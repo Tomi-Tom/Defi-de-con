@@ -54,9 +54,10 @@ export function ChallengeFieldsBuilder({ initialFields = [], onChange }: Challen
     // Auto-generate name from label
     if (key === 'label') {
       newFields[index].name = String(value)
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // remove accents
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '_')
-        .replace(/^_|_$/g, '')
+        .replace(/^_|_$/g, '') || 'champ'
     }
     update(newFields)
   }

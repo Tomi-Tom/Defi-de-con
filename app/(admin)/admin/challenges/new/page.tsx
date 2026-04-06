@@ -18,13 +18,20 @@ export default function NewChallengePage() {
     e.preventDefault()
     const form = new FormData(e.currentTarget)
 
+    // Validate fields client-side
+    const validFields = fields.filter(f => f.label.trim() !== '' && f.name.trim() !== '')
+    if (validFields.length === 0) {
+      toast.error('Ajoute au moins un champ avec un label')
+      return
+    }
+
     startTransition(async () => {
       const result = await createChallenge({
-        title: form.get('title'),
-        description: form.get('description'),
-        start_date: form.get('start_date'),
+        title: form.get('title') as string,
+        description: (form.get('description') as string) || '',
+        start_date: form.get('start_date') as string,
         duration_days: Number(form.get('duration_days')),
-        fields,
+        fields: validFields,
       })
 
       if (result?.error) {
