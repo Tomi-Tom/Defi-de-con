@@ -246,6 +246,18 @@ export type Database = {
         Update: Partial<Database['public']['Tables']['motivational_quotes']['Insert']>
         Relationships: []
       }
+      challenge_goals: {
+        Row: {
+          id: string
+          challenge_id: string
+          field_id: string
+          goal_date: string
+          target_value: number
+        }
+        Insert: Omit<Database['public']['Tables']['challenge_goals']['Row'], 'id'> & { id?: string }
+        Update: Partial<Database['public']['Tables']['challenge_goals']['Insert']>
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: {
