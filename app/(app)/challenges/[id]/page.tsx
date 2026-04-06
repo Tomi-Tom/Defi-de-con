@@ -1,5 +1,5 @@
-import { createClient } from '@/lib/supabase/server'
-import { redirect, notFound } from 'next/navigation'
+import { requireAuth } from '@/lib/supabase/require-auth'
+import { notFound } from 'next/navigation'
 import { Leaderboard } from '@/components/challenges/leaderboard'
 import { ProgressBar } from '@/components/ui/progress-bar'
 import { Button } from '@/components/ui/button'
@@ -12,9 +12,7 @@ import Link from 'next/link'
 
 export default async function ChallengeDetailPage(props: PageProps<'/challenges/[id]'>) {
   const { id } = await props.params
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  const { supabase, user } = await requireAuth()
 
   type ChallengeWithFields = {
     id: string

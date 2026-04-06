@@ -1,15 +1,16 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { requireAuthAction } from '@/lib/supabase/require-auth'
 import { refresh } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createChallengeSchema } from '@/lib/validations/challenges'
 import { addDays, format } from 'date-fns'
 
 export async function createChallenge(input: unknown) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { error: 'Non authentifie' }
+  const { supabase, user, error: authError } = await requireAuthAction()
+  if (authError) return { error: authError }
+  if (!supabase || !user) return { error: 'Non authentifie' }
 
   const parsed = createChallengeSchema.safeParse(input)
   if (!parsed.success) return { error: parsed.error.issues[0].message }
@@ -44,9 +45,9 @@ export async function createChallenge(input: unknown) {
 }
 
 export async function updateChallenge(challengeId: string, input: unknown) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { error: 'Non authentifie' }
+  const { supabase, user, error: authError } = await requireAuthAction()
+  if (authError) return { error: authError }
+  if (!supabase || !user) return { error: 'Non authentifie' }
 
   const parsed = createChallengeSchema.safeParse(input)
   if (!parsed.success) return { error: parsed.error.issues[0].message }

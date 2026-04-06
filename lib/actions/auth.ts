@@ -66,7 +66,6 @@ export async function signup(_prevState: AuthState, formData: FormData): Promise
   })
 
   if (error) {
-    console.error('Signup error:', error.message, error.status, error)
     if (error.message.includes('already registered')) {
       return { error: 'Cet email est deja utilise', values }
     }

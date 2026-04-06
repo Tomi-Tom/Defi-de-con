@@ -1,5 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
+import { requireAuth } from '@/lib/supabase/require-auth'
 import { selectDailyQuote } from '@/lib/utils/quotes'
 import { StreakWidget } from '@/components/dashboard/streak-widget'
 import { PointsWidget } from '@/components/dashboard/points-widget'
@@ -10,9 +9,7 @@ import { DailyQuoteWidget } from '@/components/dashboard/daily-quote-widget'
 import { differenceInDays, parseISO } from 'date-fns'
 
 export default async function DashboardPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  const { supabase, user } = await requireAuth()
 
   // Parallel data fetching
   const [profileRes, participationsRes, rankRes, badgesRes, quotesRes, todayPointsRes] = await Promise.all([

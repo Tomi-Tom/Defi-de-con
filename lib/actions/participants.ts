@@ -1,12 +1,12 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
+import { requireAuthAction } from '@/lib/supabase/require-auth'
 import { refresh } from 'next/cache'
 
 export async function joinChallenge(challengeId: string) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Non authentifie')
+  const { supabase, user, error: authError } = await requireAuthAction()
+  if (authError) return { error: authError }
+  if (!supabase || !user) return { error: 'Non authentifie' }
 
   const { error } = await supabase
     .from('challenge_participants')
@@ -23,9 +23,9 @@ export async function joinChallenge(challengeId: string) {
 }
 
 export async function leaveChallenge(challengeId: string) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Non authentifie')
+  const { supabase, user, error: authError } = await requireAuthAction()
+  if (authError) return { error: authError }
+  if (!supabase || !user) return { error: 'Non authentifie' }
 
   const { error } = await supabase
     .from('challenge_participants')

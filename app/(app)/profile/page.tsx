@@ -1,19 +1,17 @@
-import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
+import { requireAuth } from '@/lib/supabase/require-auth'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { BadgeDisplay } from '@/components/ui/badge-display'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Select } from '@/components/ui/select'
 import { updateProfile } from '@/lib/actions/profile'
 import { logout } from '@/lib/actions/auth'
 
 export default async function ProfilePage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  const { supabase, user } = await requireAuth()
 
   const [profileRes, badgesRes, challengesRes] = await Promise.all([
-    supabase.from('profiles').select('*').eq('id', user.id).single(),
+    supabase.from('profiles').select('username, avatar_url, points_total, entry_mode, is_admin').eq('id', user.id).single(),
     supabase.from('user_badges').select('badges(name, icon_url), earned_at').eq('user_id', user.id).order('earned_at', { ascending: false }),
     supabase.from('challenge_participants').select('challenges(id, title, status)').eq('user_id', user.id),
   ])
@@ -70,17 +68,10 @@ export default async function ProfilePage() {
               await updateProfile(formData)
             }} className="space-y-4">
             <Input name="username" label="Nom d'utilisateur" defaultValue={profile.username} />
-            <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-semibold text-text-secondary">Mode de saisie</label>
-              <select
-                name="entry_mode"
-                defaultValue={profile.entry_mode}
-                className="rounded-[10px] border border-border bg-bg-secondary px-4 py-2.5 text-white focus:border-accent-green focus:outline-none"
-              >
-                <option value="quick">Rapide (tous les champs)</option>
-                <option value="wizard">Wizard (un champ a la fois)</option>
-              </select>
-            </div>
+            <Select name="entry_mode" label="Mode de saisie" defaultValue={profile.entry_mode}>
+              <option value="quick">Rapide (tous les champs)</option>
+              <option value="wizard">Wizard (un champ a la fois)</option>
+            </Select>
             <Button type="submit">Sauvegarder</Button>
           </form>
         </CardContent>

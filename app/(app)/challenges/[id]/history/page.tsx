@@ -1,14 +1,12 @@
-import { createClient } from '@/lib/supabase/server'
-import { redirect, notFound } from 'next/navigation'
+import { requireAuth } from '@/lib/supabase/require-auth'
+import { notFound } from 'next/navigation'
 import { Card, CardContent } from '@/components/ui/card'
 import { format, parseISO } from 'date-fns'
 import { fr } from 'date-fns/locale'
 
 export default async function HistoryPage(props: PageProps<'/challenges/[id]/history'>) {
   const { id } = await props.params
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  const { supabase, user } = await requireAuth()
 
   const { data: challenge } = await supabase
     .from('challenges')

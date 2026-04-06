@@ -1,5 +1,5 @@
-import { createClient } from '@/lib/supabase/server'
-import { redirect, notFound } from 'next/navigation'
+import { requireAuth } from '@/lib/supabase/require-auth'
+import { notFound, redirect } from 'next/navigation'
 import { DailyEntryForm } from '@/components/challenges/daily-entry-form'
 import { getTodayUTC } from '@/lib/utils/dates'
 
@@ -12,9 +12,7 @@ type ChallengeWithFields = {
 
 export default async function EntryPage(props: PageProps<'/challenges/[id]/entry'>) {
   const { id } = await props.params
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  const { supabase, user } = await requireAuth()
 
   const today = getTodayUTC()
 

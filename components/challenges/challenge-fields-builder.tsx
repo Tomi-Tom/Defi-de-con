@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Select } from '@/components/ui/select'
 import { Plus, Trash2, GripVertical } from 'lucide-react'
 
 interface Field {
@@ -72,15 +73,14 @@ export function ChallengeFieldsBuilder({ initialFields = [], onChange }: Challen
               value={field.label}
               onChange={e => updateField(i, 'label', e.target.value)}
             />
-            <select
+            <Select
               value={field.type}
               onChange={e => updateField(i, 'type', e.target.value)}
-              className="rounded-[10px] border border-border bg-bg-secondary px-3 py-2.5 text-white text-sm focus:border-accent-green focus:outline-none"
             >
               {fieldTypes.map(t => (
                 <option key={t.value} value={t.value}>{t.label}</option>
               ))}
-            </select>
+            </Select>
           </div>
           <label className="flex items-center gap-1 mt-2.5">
             <input

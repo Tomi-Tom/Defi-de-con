@@ -1,6 +1,6 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
+import { requireAuthAction } from '@/lib/supabase/require-auth'
 import { refresh } from 'next/cache'
 import { submitEntrySchema, type SubmitEntryInput } from '@/lib/validations/entries'
 import { getTodayUTC, getYesterdayUTC } from '@/lib/utils/dates'
@@ -22,9 +22,9 @@ export async function submitEntry(input: SubmitEntryInput): Promise<EntryResult>
     return { error: parsed.error.issues[0].message }
   }
 
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { error: 'Non authentifie' }
+  const { supabase, user, error: authError } = await requireAuthAction()
+  if (authError) return { error: authError }
+  if (!supabase || !user) return { error: 'Non authentifie' }
 
   const today = getTodayUTC()
   const yesterday = getYesterdayUTC()
@@ -52,21 +52,20 @@ export async function submitEntry(input: SubmitEntryInput): Promise<EntryResult>
   let entryId: string
 
   if (existingEntry) {
-    // Update existing entry values
+    // Update existing entry values (batch upsert)
     entryId = existingEntry.id
-    for (const val of values) {
-      await supabase
-        .from('entry_values')
-        .upsert({
-          entry_id: entryId,
-          field_id: val.field_id,
-          value_text: val.value_text,
-          value_number: val.value_number,
-          value_date: val.value_date,
-          value_file_url: val.value_file_url,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } as any, { onConflict: 'entry_id,field_id' })
-    }
+    await supabase.from('entry_values').upsert(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      values.map(val => ({
+        entry_id: entryId,
+        field_id: val.field_id,
+        value_text: val.value_text,
+        value_number: val.value_number,
+        value_date: val.value_date,
+        value_file_url: val.value_file_url,
+      })) as any,
+      { onConflict: 'entry_id,field_id' }
+    )
 
     refresh()
     return { success: true, currentStreak: participation.current_streak }
@@ -95,30 +94,29 @@ export async function submitEntry(input: SubmitEntryInput): Promise<EntryResult>
     })) as any
   )
 
-  // Calculate streak
-  const { data: yesterdayEntry } = await supabase
-    .from('daily_entries')
-    .select('id')
-    .eq('challenge_id', challenge_id)
-    .eq('user_id', user.id)
-    .eq('entry_date', yesterday)
-    .single()
+  // Calculate streak and check first entry in parallel
+  const [{ data: yesterdayEntry }, { count }] = await Promise.all([
+    supabase
+      .from('daily_entries')
+      .select('id')
+      .eq('challenge_id', challenge_id)
+      .eq('user_id', user.id)
+      .eq('entry_date', yesterday)
+      .single(),
+    supabase
+      .from('daily_entries')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id),
+  ])
 
   const newStreak = yesterdayEntry ? participation.current_streak + 1 : 1
   const bestStreak = Math.max(newStreak, participation.best_streak)
+  const isFirstEntry = count === 1
 
   await supabase
     .from('challenge_participants')
     .update({ current_streak: newStreak, best_streak: bestStreak })
     .eq('id', participation.id)
-
-  // Check if first entry ever
-  const { count } = await supabase
-    .from('daily_entries')
-    .select('*', { count: 'exact', head: true })
-    .eq('user_id', user.id)
-
-  const isFirstEntry = count === 1
 
   // Award points
   const { totalAwarded, awards } = await awardPoints({

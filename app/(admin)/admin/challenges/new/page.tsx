@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { createChallenge } from '@/lib/actions/challenges'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { ChallengeFieldsBuilder } from '@/components/challenges/challenge-fields-builder'
 import { toast } from 'sonner'
@@ -39,15 +40,12 @@ export default function NewChallengePage() {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <Input name="title" label="Titre" placeholder="Ex: 30 jours de pompes" required />
-        <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-semibold text-text-secondary">Description</label>
-          <textarea
-            name="description"
-            rows={3}
-            className="rounded-[10px] border border-border bg-bg-secondary px-4 py-2.5 text-white placeholder:text-text-muted focus:border-accent-green focus:outline-none resize-none"
-            placeholder="Decris le defi..."
-          />
-        </div>
+        <Textarea
+          name="description"
+          label="Description"
+          rows={3}
+          placeholder="Decris le defi..."
+        />
         <div className="grid grid-cols-2 gap-4">
           <Input name="start_date" type="date" label="Date de debut" required />
           <Input name="duration_days" type="number" label="Duree (jours)" placeholder="30" required />

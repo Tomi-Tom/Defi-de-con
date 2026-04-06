@@ -1,13 +1,13 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
+import { requireAuthAction } from '@/lib/supabase/require-auth'
 import { refresh } from 'next/cache'
 import { updateProfileSchema } from '@/lib/validations/profile'
 
 export async function updateProfile(formData: FormData) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { error: 'Non authentifie' }
+  const { supabase, user, error: authError } = await requireAuthAction()
+  if (authError) return { error: authError }
+  if (!supabase || !user) return { error: 'Non authentifie' }
 
   const parsed = updateProfileSchema.safeParse({
     username: formData.get('username') || undefined,
