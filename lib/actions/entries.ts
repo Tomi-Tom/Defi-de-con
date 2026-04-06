@@ -11,6 +11,9 @@ export type EntryResult = {
   success?: boolean
   error?: string
   pointsAwarded?: number
+  pointsPenalty?: number
+  goalsCatchup?: boolean
+  goalsPerfect?: boolean
   newBadges?: Array<{ name: string; iconUrl: string }>
   streakMilestone?: boolean
   currentStreak?: number
@@ -121,6 +124,66 @@ export async function submitEntry(input: SubmitEntryInput): Promise<EntryResult>
     .eq('id', participation.id)
   if (updateError) return { error: updateError.message }
 
+  // Evaluate goals for this entry
+  const { data: todayGoals } = await supabase
+    .from('challenge_goals')
+    .select('field_id, target_value')
+    .eq('challenge_id', challenge_id)
+    .eq('goal_date', today)
+
+  type GoalRow = { field_id: string; target_value: number }
+  const goalsForToday = (todayGoals ?? []) as unknown as GoalRow[]
+
+  let goalEvaluations: Array<{
+    fieldId: string
+    targetValue: number
+    actualValue: number
+    hadPriorDeficit: boolean
+  }> | undefined
+
+  if (goalsForToday.length > 0) {
+    // Fetch past deficit for each field
+    const { data: pastGoals } = await supabase
+      .from('challenge_goals')
+      .select('field_id, goal_date, target_value')
+      .eq('challenge_id', challenge_id)
+      .lt('goal_date', today)
+
+    const { data: pastEntries } = await supabase
+      .from('daily_entries')
+      .select('entry_date, entry_values(field_id, value_number)')
+      .eq('challenge_id', challenge_id)
+      .eq('user_id', user.id)
+      .lt('entry_date', today)
+
+    type PastGoal = { field_id: string; goal_date: string; target_value: number }
+    type PastEntry = { entry_date: string; entry_values: Array<{ field_id: string; value_number: number | null }> }
+    const allPastGoals = (pastGoals ?? []) as unknown as PastGoal[]
+    const allPastEntries = (pastEntries ?? []) as unknown as PastEntry[]
+
+    goalEvaluations = goalsForToday.map(g => {
+      // Find actual value submitted today
+      const todayVal = values.find(v => v.field_id === g.field_id)
+      const actualValue = todayVal?.value_number ?? 0
+
+      // Check if there was prior deficit on this field
+      let priorDeficit = 0
+      for (const pg of allPastGoals.filter(pg => pg.field_id === g.field_id)) {
+        const entry = allPastEntries.find(e => e.entry_date === pg.goal_date)
+        const actual = entry?.entry_values?.find(v => v.field_id === g.field_id)?.value_number ?? 0
+        const diff = pg.target_value - actual
+        if (diff > 0) priorDeficit += diff
+      }
+
+      return {
+        fieldId: g.field_id,
+        targetValue: g.target_value,
+        actualValue,
+        hadPriorDeficit: priorDeficit > 0,
+      }
+    })
+  }
+
   // Award points
   const { totalAwarded, awards } = await awardPoints({
     userId: user.id,
@@ -128,6 +191,7 @@ export async function submitEntry(input: SubmitEntryInput): Promise<EntryResult>
     entryId,
     currentStreak: newStreak,
     isFirstEntry,
+    goalEvaluations,
   })
 
   // Check badges
@@ -138,12 +202,18 @@ export async function submitEntry(input: SubmitEntryInput): Promise<EntryResult>
   })
 
   const streakMilestone = awards.some(a => a.action.startsWith('streak_'))
+  const pointsPenalty = awards.filter(a => a.points < 0).reduce((s, a) => s + a.points, 0)
+  const goalsCatchup = awards.some(a => a.action === 'goal_catchup')
+  const goalsPerfect = awards.some(a => a.action === 'goal_perfect')
 
   refresh()
 
   return {
     success: true,
     pointsAwarded: totalAwarded,
+    pointsPenalty,
+    goalsCatchup,
+    goalsPerfect,
     newBadges,
     streakMilestone,
     currentStreak: newStreak,

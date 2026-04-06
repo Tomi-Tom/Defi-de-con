@@ -93,6 +93,30 @@ export function DailyEntryForm({ challengeId, fields, existingValues = [], yeste
         })
       }
 
+      // Goal feedback
+      if (result.pointsPenalty && result.pointsPenalty < 0) {
+        setTimeout(() => {
+          toast.warning(`Objectif non atteint : ${result.pointsPenalty} points`, {
+            description: 'Rattrape ton retard demain pour un bonus !',
+            style: { background: '#1a0f0a', border: '1px solid #ff6b00' },
+          })
+        }, 800)
+      }
+      if (result.goalsCatchup) {
+        setTimeout(() => {
+          toast.success('Retard rattrape ! Bonus de rattrapage obtenu', {
+            style: { background: '#0a1a0a', border: '1px solid #00ff87' },
+          })
+        }, 800)
+      }
+      if (result.goalsPerfect) {
+        setTimeout(() => {
+          toast.success('Tous les objectifs atteints ! Bonus parfait', {
+            style: { background: '#0a1a0a', border: '1px solid #00ff87' },
+          })
+        }, 1000)
+      }
+
       // Badge notifications
       if (result.newBadges && result.newBadges.length > 0) {
         for (const badge of result.newBadges) {
