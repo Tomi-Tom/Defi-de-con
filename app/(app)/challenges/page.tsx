@@ -21,7 +21,7 @@ export default async function ChallengesPage(props: PageProps<'/challenges'>) {
   const { data: challengesRaw } = await supabase
     .from('challenges')
     .select('*, challenge_participants(count)')
-    .eq('status', tab === 'upcoming' ? 'draft' : tab)
+    .eq('status', (tab === 'upcoming' ? 'draft' : tab) as 'draft' | 'active' | 'completed')
     .order('start_date', { ascending: false })
 
   const challenges = (challengesRaw ?? []) as unknown as ChallengeWithCount[]

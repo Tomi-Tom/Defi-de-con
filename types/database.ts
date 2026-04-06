@@ -18,6 +18,7 @@ export type Database = {
           updated_at?: string
         }
         Update: Partial<Database['public']['Tables']['profiles']['Insert']>
+        Relationships: []
       }
       challenges: {
         Row: {
@@ -40,6 +41,7 @@ export type Database = {
           updated_at?: string
         }
         Update: Partial<Database['public']['Tables']['challenges']['Insert']>
+        Relationships: []
       }
       challenge_fields: {
         Row: {
@@ -54,6 +56,15 @@ export type Database = {
         }
         Insert: Omit<Database['public']['Tables']['challenge_fields']['Row'], 'id'> & { id?: string }
         Update: Partial<Database['public']['Tables']['challenge_fields']['Insert']>
+        Relationships: [
+          {
+            foreignKeyName: "challenge_fields_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       challenge_participants: {
         Row: {
@@ -73,6 +84,22 @@ export type Database = {
           points_earned?: number
         }
         Update: Partial<Database['public']['Tables']['challenge_participants']['Insert']>
+        Relationships: [
+          {
+            foreignKeyName: "challenge_participants_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "challenge_participants_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       daily_entries: {
         Row: {
@@ -87,6 +114,22 @@ export type Database = {
           submitted_at?: string
         }
         Update: Partial<Database['public']['Tables']['daily_entries']['Insert']>
+        Relationships: [
+          {
+            foreignKeyName: "daily_entries_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daily_entries_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       entry_values: {
         Row: {
@@ -100,6 +143,22 @@ export type Database = {
         }
         Insert: Omit<Database['public']['Tables']['entry_values']['Row'], 'id'> & { id?: string }
         Update: Partial<Database['public']['Tables']['entry_values']['Insert']>
+        Relationships: [
+          {
+            foreignKeyName: "entry_values_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "daily_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entry_values_field_id_fkey"
+            columns: ["field_id"]
+            isOneToOne: false
+            referencedRelation: "challenge_fields"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       badges: {
         Row: {
@@ -112,6 +171,7 @@ export type Database = {
         }
         Insert: Omit<Database['public']['Tables']['badges']['Row'], 'id'> & { id?: string }
         Update: Partial<Database['public']['Tables']['badges']['Insert']>
+        Relationships: []
       }
       user_badges: {
         Row: {
@@ -126,6 +186,22 @@ export type Database = {
           earned_at?: string
         }
         Update: Partial<Database['public']['Tables']['user_badges']['Insert']>
+        Relationships: [
+          {
+            foreignKeyName: "user_badges_badge_id_fkey"
+            columns: ["badge_id"]
+            isOneToOne: false
+            referencedRelation: "badges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_badges_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       points_log: {
         Row: {
@@ -142,6 +218,22 @@ export type Database = {
           created_at?: string
         }
         Update: Partial<Database['public']['Tables']['points_log']['Insert']>
+        Relationships: [
+          {
+            foreignKeyName: "points_log_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "points_log_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       motivational_quotes: {
         Row: {
@@ -152,10 +244,20 @@ export type Database = {
         }
         Insert: Omit<Database['public']['Tables']['motivational_quotes']['Row'], 'id'> & { id?: string }
         Update: Partial<Database['public']['Tables']['motivational_quotes']['Insert']>
+        Relationships: []
       }
     }
     Views: Record<string, never>
-    Functions: Record<string, never>
+    Functions: {
+      increment_points: {
+        Args: {
+          p_user_id: string
+          p_challenge_id: string
+          p_points: number
+        }
+        Returns: undefined
+      }
+    }
     Enums: Record<string, never>
   }
 }
