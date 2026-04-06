@@ -1,6 +1,6 @@
 import { requireAuth } from '@/lib/supabase/require-auth'
 import { ChallengeCard } from '@/components/challenges/challenge-card'
-import { Trophy, Flame } from 'lucide-react'
+import { Trophy, Flame, Clock } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
 import { differenceInDays, parseISO } from 'date-fns'
 
