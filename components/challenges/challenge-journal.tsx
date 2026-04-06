@@ -5,6 +5,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { Calendar, Check, TrendingUp, TrendingDown } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import { fr } from 'date-fns/locale'
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 
 interface FieldDef {
   id: string
@@ -42,6 +43,16 @@ interface ChallengeJournalProps {
 export function ChallengeJournal({ entries, fields, goals = [] }: ChallengeJournalProps) {
   const sortedFields = [...fields].sort((a, b) => a.order - b.order)
   const numericFieldIds = new Set(fields.filter(f => f.type === 'number').map(f => f.id))
+  const numericFields = fields.filter(f => f.type === 'number').sort((a, b) => a.order - b.order)
+
+  const chartData = entries.map(e => {
+    const point: Record<string, unknown> = { date: e.entry_date }
+    for (const f of numericFields) {
+      const val = e.entry_values.find(v => v.field_id === f.id)
+      point[f.label] = val?.value_number ?? null
+    }
+    return point
+  }).reverse()
 
   const getGoal = (fieldId: string, date: string) =>
     goals.find(g => g.field_id === fieldId && g.goal_date === date)
@@ -75,6 +86,54 @@ export function ChallengeJournal({ entries, fields, goals = [] }: ChallengeJourn
           <div className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Streak</div>
         </div>
       </div>
+
+      {/* Evolution charts */}
+      {numericFields.length > 0 && chartData.length > 1 && (
+        <div className="space-y-4">
+          <h3 className="text-sm font-black uppercase tracking-widest text-text-muted">Evolution</h3>
+          {numericFields.map(f => (
+            <div key={f.id} className="bg-bg-secondary rounded-xl border border-border p-4">
+              <div className="text-xs font-bold uppercase tracking-wider text-text-muted mb-3">{f.label}</div>
+              <ResponsiveContainer width="100%" height={150}>
+                <LineChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fill: '#666', fontSize: 10 }}
+                    tickFormatter={(v: string) => {
+                      try { return format(parseISO(v), 'dd/MM') } catch { return v }
+                    }}
+                    axisLine={{ stroke: '#222' }}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    tick={{ fill: '#666', fontSize: 10 }}
+                    axisLine={{ stroke: '#222' }}
+                    tickLine={false}
+                  />
+                  <Tooltip
+                    contentStyle={{ background: '#111', border: '1px solid #222', borderRadius: 8, fontSize: 12 }}
+                    labelStyle={{ color: '#888' }}
+                    itemStyle={{ color: '#00ff87' }}
+                    labelFormatter={(v) => {
+                      const s = String(v)
+                      try { return format(parseISO(s), 'd MMM yyyy', { locale: fr }) } catch { return s }
+                    }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey={f.label}
+                    stroke="#00ff87"
+                    strokeWidth={2}
+                    dot={{ fill: '#00ff87', r: 3, strokeWidth: 0 }}
+                    activeDot={{ fill: '#00ff87', r: 5, strokeWidth: 0 }}
+                    connectNulls={false}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Timeline */}
       <div className="relative">

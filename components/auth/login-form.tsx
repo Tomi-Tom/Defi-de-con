@@ -31,15 +31,20 @@ export function LoginForm() {
         defaultValue={state.values?.email ?? ''}
         error={state.fieldErrors?.email}
       />
-      <Input
-        name="password"
-        type="password"
-        label="Mot de passe"
-        placeholder="••••••"
-        required
-        defaultValue={state.values?.password ?? ''}
-        error={state.fieldErrors?.password}
-      />
+      <div className="flex flex-col gap-1">
+        <Input
+          name="password"
+          type="password"
+          label="Mot de passe"
+          placeholder="••••••"
+          required
+          defaultValue={state.values?.password ?? ''}
+          error={state.fieldErrors?.password}
+        />
+        <Link href="#" className="text-xs text-text-muted text-accent-green/70 hover:text-accent-green self-end">
+          Mot de passe oublie ?
+        </Link>
+      </div>
 
       <Button type="submit" size="lg" disabled={pending}>
         {pending ? 'Connexion...' : 'Se connecter'}
