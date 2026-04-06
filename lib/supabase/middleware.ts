@@ -30,18 +30,21 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   const isAuthPage = request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/signup'
-  const isPublicPage = request.nextUrl.pathname === '/' || isAuthPage
+  const isLanding = request.nextUrl.pathname === '/'
+  const isPublicPage = isLanding || isAuthPage
   const isAdminPage = request.nextUrl.pathname.startsWith('/admin')
 
-  if (!user && !isPublicPage) {
+  // Authenticated users: redirect away from public pages to dashboard
+  if (user && (isAuthPage || isLanding)) {
     const url = request.nextUrl.clone()
-    url.pathname = '/login'
+    url.pathname = '/dashboard'
     return NextResponse.redirect(url)
   }
 
-  if (user && isAuthPage) {
+  // Unauthenticated users: redirect to login (except public pages)
+  if (!user && !isPublicPage) {
     const url = request.nextUrl.clone()
-    url.pathname = '/dashboard'
+    url.pathname = '/login'
     return NextResponse.redirect(url)
   }
 
