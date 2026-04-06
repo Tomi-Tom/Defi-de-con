@@ -10,7 +10,7 @@ export function StreakWidget({ streak }: { streak: number }) {
             <Flame size={20} className={streak > 0 ? 'text-black' : 'text-accent-orange'} />
           </div>
           <div>
-            <div className={`text-[10px] font-bold uppercase tracking-widest ${streak > 0 ? 'text-black/60' : 'text-text-muted'}`}>
+            <div className={`text-[10px] font-black uppercase tracking-[0.15em] ${streak > 0 ? 'text-black/60' : 'text-text-muted'}`}>
               Streak actuel
             </div>
             <div className={`text-2xl font-black ${streak > 0 ? 'text-black' : 'text-white'}`}>

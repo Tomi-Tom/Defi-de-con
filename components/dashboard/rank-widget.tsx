@@ -20,7 +20,7 @@ export function RankWidget({
             <TrendingUp size={20} className="text-accent-orange" />
           </div>
           <div>
-            <div className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Classement</div>
+            <div className="text-[10px] font-black uppercase tracking-[0.15em] text-text-muted">Classement</div>
             <div className="text-2xl font-black text-white">#{rank}</div>
             {percentile > 0 && (
               <div className="text-xs font-semibold text-accent-orange">

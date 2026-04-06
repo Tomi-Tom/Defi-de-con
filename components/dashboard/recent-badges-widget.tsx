@@ -10,7 +10,7 @@ export function RecentBadgesWidget({ badges }: { badges: RecentBadge[] }) {
   return (
     <Card>
       <CardHeader>
-        <h3 className="text-sm font-bold uppercase tracking-widest text-text-muted">Badges recents</h3>
+        <h3 className="text-[10px] font-black uppercase tracking-[0.15em] text-text-muted">Badges recents</h3>
       </CardHeader>
       <CardContent>
         <div className="flex gap-4 flex-wrap">

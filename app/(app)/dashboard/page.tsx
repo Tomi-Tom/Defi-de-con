@@ -153,21 +153,28 @@ export default async function DashboardPage() {
   return (
     <div className="animate-fade-in max-w-5xl mx-auto space-y-6">
       {/* Welcome header */}
-      <div>
-        <h2 className="text-2xl font-black">
-          Salut, <span className="text-accent-green">{profile?.username ?? 'champion'}</span>
-        </h2>
-        <p className="text-text-muted text-sm mt-1">Pret a tout donner aujourd&apos;hui ?</p>
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-bg-secondary to-bg-tertiary border border-border p-6">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-accent-green/5 rounded-full blur-2xl" />
+        <div className="relative">
+          <p className="text-xs font-black uppercase tracking-widest text-accent-green mb-1">Dashboard</p>
+          <h2 className="text-2xl font-black">
+            Salut, <span className="text-accent-green">{profile?.username ?? 'champion'}</span>
+          </h2>
+          <p className="text-text-muted text-sm mt-1">Pret a tout donner aujourd&apos;hui ?</p>
+        </div>
       </div>
 
       {/* Streak at risk banner */}
       {showStreakBanner && (
-        <div className="animate-pulse-glow-orange rounded-2xl bg-accent-orange/10 border border-accent-orange/20 p-4 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <Flame size={20} className="text-accent-orange shrink-0" />
-            <p className="text-sm font-semibold text-white">
-              Ton streak de <span className="text-accent-orange">{bestStreak}j</span> est en danger&nbsp;! Saisis tes donnees avant minuit.
-            </p>
+        <div className="animate-pulse-glow-orange rounded-2xl bg-accent-orange/10 border border-accent-orange/30 p-4 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-accent-orange/20 flex items-center justify-center flex-shrink-0">
+              <Flame size={20} className="text-accent-orange" />
+            </div>
+            <div>
+              <p className="text-sm font-black text-white">Streak en danger !</p>
+              <p className="text-xs text-text-muted">Ton streak de {bestStreak}j est en jeu. Saisis tes donnees avant minuit.</p>
+            </div>
           </div>
           <Link href={`/challenges/${firstChallengeWithoutEntry.id}/entry`} className="shrink-0">
             <Button size="sm">Saisir maintenant</Button>
