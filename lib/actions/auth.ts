@@ -6,37 +6,53 @@ import { loginSchema, signupSchema } from '@/lib/validations/auth'
 
 export type AuthState = {
   error?: string
+  fieldErrors?: Record<string, string>
+  values?: Record<string, string>
 }
 
 export async function login(_prevState: AuthState, formData: FormData): Promise<AuthState> {
-  const parsed = loginSchema.safeParse({
-    email: formData.get('email'),
-    password: formData.get('password'),
-  })
+  const values = {
+    email: formData.get('email') as string ?? '',
+    password: formData.get('password') as string ?? '',
+  }
+
+  const parsed = loginSchema.safeParse(values)
 
   if (!parsed.success) {
-    return { error: parsed.error.issues[0].message }
+    const fieldErrors: Record<string, string> = {}
+    for (const issue of parsed.error.issues) {
+      const field = issue.path[0] as string
+      if (!fieldErrors[field]) fieldErrors[field] = issue.message
+    }
+    return { fieldErrors, values }
   }
 
   const supabase = await createClient()
   const { error } = await supabase.auth.signInWithPassword(parsed.data)
 
   if (error) {
-    return { error: 'Email ou mot de passe incorrect' }
+    return { error: 'Email ou mot de passe incorrect', values }
   }
 
   redirect('/dashboard')
 }
 
 export async function signup(_prevState: AuthState, formData: FormData): Promise<AuthState> {
-  const parsed = signupSchema.safeParse({
-    username: formData.get('username'),
-    email: formData.get('email'),
-    password: formData.get('password'),
-  })
+  const values = {
+    username: formData.get('username') as string ?? '',
+    email: formData.get('email') as string ?? '',
+    password: formData.get('password') as string ?? '',
+  }
+
+  const parsed = signupSchema.safeParse(values)
 
   if (!parsed.success) {
-    return { error: parsed.error.issues[0].message }
+    const fieldErrors: Record<string, string> = {}
+    for (const issue of parsed.error.issues) {
+      const field = issue.path[0] as string
+      if (!fieldErrors[field]) fieldErrors[field] = issue.message
+    }
+    return { fieldErrors, values }
   }
 
   const supabase = await createClient()
@@ -51,9 +67,9 @@ export async function signup(_prevState: AuthState, formData: FormData): Promise
 
   if (error) {
     if (error.message.includes('already registered')) {
-      return { error: 'Cet email est deja utilise' }
+      return { error: 'Cet email est deja utilise', values }
     }
-    return { error: 'Erreur lors de la creation du compte' }
+    return { error: 'Erreur lors de la creation du compte', values }
   }
 
   redirect('/dashboard')

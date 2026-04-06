@@ -22,8 +22,24 @@ export function LoginForm() {
         </div>
       )}
 
-      <Input name="email" type="email" label="Email" placeholder="ton@email.com" required />
-      <Input name="password" type="password" label="Mot de passe" placeholder="••••••" required />
+      <Input
+        name="email"
+        type="email"
+        label="Email"
+        placeholder="ton@email.com"
+        required
+        defaultValue={state.values?.email ?? ''}
+        error={state.fieldErrors?.email}
+      />
+      <Input
+        name="password"
+        type="password"
+        label="Mot de passe"
+        placeholder="••••••"
+        required
+        defaultValue={state.values?.password ?? ''}
+        error={state.fieldErrors?.password}
+      />
 
       <Button type="submit" size="lg" disabled={pending}>
         {pending ? 'Connexion...' : 'Se connecter'}

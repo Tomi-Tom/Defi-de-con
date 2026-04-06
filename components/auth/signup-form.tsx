@@ -22,9 +22,32 @@ export function SignupForm() {
         </div>
       )}
 
-      <Input name="username" label="Nom d'utilisateur" placeholder="john_doe" required />
-      <Input name="email" type="email" label="Email" placeholder="ton@email.com" required />
-      <Input name="password" type="password" label="Mot de passe" placeholder="Min. 6 caracteres" required />
+      <Input
+        name="username"
+        label="Nom d'utilisateur"
+        placeholder="john_doe"
+        required
+        defaultValue={state.values?.username ?? ''}
+        error={state.fieldErrors?.username}
+      />
+      <Input
+        name="email"
+        type="email"
+        label="Email"
+        placeholder="ton@email.com"
+        required
+        defaultValue={state.values?.email ?? ''}
+        error={state.fieldErrors?.email}
+      />
+      <Input
+        name="password"
+        type="password"
+        label="Mot de passe"
+        placeholder="Min. 6 caracteres"
+        required
+        defaultValue={state.values?.password ?? ''}
+        error={state.fieldErrors?.password}
+      />
 
       <Button type="submit" size="lg" disabled={pending}>
         {pending ? 'Creation...' : 'Creer mon compte'}
