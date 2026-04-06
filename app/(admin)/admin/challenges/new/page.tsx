@@ -19,6 +19,7 @@ interface FieldDef {
 
 const fieldTypes = [
   { value: 'number', label: 'Nombre' },
+  { value: 'duration', label: 'Duree (hh:mm:ss)' },
   { value: 'text', label: 'Texte' },
   { value: 'date', label: 'Date' },
   { value: 'boolean', label: 'Oui/Non' },

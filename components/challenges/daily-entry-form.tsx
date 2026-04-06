@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form'
 import { submitEntry, type EntryResult } from '@/lib/actions/entries'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { DurationInput } from '@/components/ui/duration-input'
 import { Target, AlertTriangle, Copy } from 'lucide-react'
 import { fireConfetti } from '@/components/ui/confetti'
 import { toast } from 'sonner'
@@ -45,6 +46,7 @@ interface DailyEntryFormProps {
 export function DailyEntryForm({ challengeId, fields, existingValues = [], yesterdayValues, quotes, goals = [] }: DailyEntryFormProps) {
   const [isPending, startTransition] = useTransition()
   const { register, handleSubmit, setValue } = useForm()
+  const [durationValues, setDurationValues] = useState<Record<string, number>>({})
 
   const getExistingValue = (fieldId: string) =>
     existingValues.find(v => v.field_id === fieldId)
@@ -56,9 +58,9 @@ export function DailyEntryForm({ challengeId, fields, existingValues = [], yeste
         return {
           field_id: f.id,
           value_text: f.type === 'text' || f.type === 'boolean' ? String(raw ?? '') : null,
-          value_number: f.type === 'number' ? Number(raw) || null : null,
+          value_number: (f.type === 'number') ? (Number(raw) || null) : (f.type === 'duration') ? (durationValues[f.id] ?? null) : null,
           value_date: f.type === 'date' ? String(raw ?? '') || null : null,
-          value_file_url: null, // File upload handled separately
+          value_file_url: null,
         }
       })
 
@@ -195,6 +197,14 @@ export function DailyEntryForm({ challengeId, fields, existingValues = [], yeste
                   />
                   <span className="text-sm font-semibold text-white">{field.label}</span>
                 </label>
+              )}
+              {field.type === 'duration' && (
+                <DurationInput
+                  label={field.label}
+                  defaultValue={existing?.value_number}
+                  required={field.required}
+                  onChange={(secs) => setDurationValues(prev => ({ ...prev, [field.id]: secs }))}
+                />
               )}
             </div>
           )

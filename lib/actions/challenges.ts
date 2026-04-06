@@ -47,7 +47,7 @@ export async function createChallenge(input: CreateChallengeInput) {
         .replace(/[^a-z0-9]+/g, '_')
         .replace(/^_|_$/g, '') || `champ_${i}`,
       label: f.label.trim(),
-      type: ['number', 'text', 'date', 'boolean', 'file', 'image'].includes(f.type) ? f.type : 'text',
+      type: ['number', 'duration', 'text', 'date', 'boolean', 'file', 'image'].includes(f.type) ? f.type : 'text',
       required: f.required ?? true,
       order: i,
       config: null,

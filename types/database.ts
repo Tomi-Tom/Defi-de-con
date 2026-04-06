@@ -49,7 +49,7 @@ export type Database = {
           challenge_id: string
           name: string
           label: string
-          type: 'number' | 'text' | 'date' | 'boolean' | 'file' | 'image'
+          type: 'number' | 'duration' | 'text' | 'date' | 'boolean' | 'file' | 'image'
           required: boolean
           order: number
           config: Record<string, unknown> | null

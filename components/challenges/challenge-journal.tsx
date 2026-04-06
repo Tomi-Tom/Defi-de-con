@@ -6,6 +6,7 @@ import { Calendar, Check, TrendingUp, TrendingDown } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
+import { formatDuration } from '@/components/ui/duration-input'
 
 interface FieldDef {
   id: string
@@ -206,7 +207,9 @@ export function ChallengeJournal({ entries, fields, goals = [] }: ChallengeJourn
                           <div className="text-[10px] font-bold uppercase tracking-wider text-text-muted mb-0.5">{f.label}</div>
                           <div className="flex items-center gap-1.5">
                             <span className="text-sm font-black text-white">
-                              {displayValue !== null ? String(displayValue) : '—'}
+                              {displayValue !== null
+                                ? (f.type === 'duration' && typeof displayValue === 'number' ? formatDuration(displayValue) : String(displayValue))
+                                : '—'}
                             </span>
                             {hasGoal && (
                               <>
