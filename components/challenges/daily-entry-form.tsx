@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form'
 import { submitEntry, type EntryResult } from '@/lib/actions/entries'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Target, AlertTriangle } from 'lucide-react'
+import { Target, AlertTriangle, Copy } from 'lucide-react'
 import { fireConfetti } from '@/components/ui/confetti'
 import { toast } from 'sonner'
 import { selectContextualQuote } from '@/lib/utils/quotes'
@@ -37,13 +37,14 @@ interface DailyEntryFormProps {
   challengeId: string
   fields: Field[]
   existingValues?: ExistingValue[]
+  yesterdayValues?: ExistingValue[]
   quotes: Array<{ text: string; author: string | null; context: string }>
   goals?: GoalInfo[]
 }
 
-export function DailyEntryForm({ challengeId, fields, existingValues = [], quotes, goals = [] }: DailyEntryFormProps) {
+export function DailyEntryForm({ challengeId, fields, existingValues = [], yesterdayValues, quotes, goals = [] }: DailyEntryFormProps) {
   const [isPending, startTransition] = useTransition()
-  const { register, handleSubmit } = useForm()
+  const { register, handleSubmit, setValue } = useForm()
 
   const getExistingValue = (fieldId: string) =>
     existingValues.find(v => v.field_id === fieldId)
@@ -105,6 +106,25 @@ export function DailyEntryForm({ challengeId, fields, existingValues = [], quote
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      {yesterdayValues && yesterdayValues.length > 0 && existingValues.length === 0 && (
+        <button
+          type="button"
+          onClick={() => {
+            for (const yv of yesterdayValues) {
+              const field = fields.find(f => f.id === yv.field_id)
+              if (field) {
+                if (yv.value_number !== null) setValue(field.name, yv.value_number)
+                else if (yv.value_text !== null) setValue(field.name, yv.value_text)
+                else if (yv.value_date !== null) setValue(field.name, yv.value_date)
+              }
+            }
+          }}
+          className="w-full p-3 rounded-xl border border-border bg-bg-tertiary text-sm font-bold text-text-secondary hover:text-white hover:border-accent-green/30 transition-all flex items-center justify-center gap-2"
+        >
+          <Copy size={14} />
+          Reprendre les valeurs d'hier
+        </button>
+      )}
       {fields
         .sort((a, b) => (a as unknown as { order: number }).order - (b as unknown as { order: number }).order)
         .map(field => {

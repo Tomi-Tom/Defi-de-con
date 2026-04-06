@@ -1,7 +1,7 @@
 import { requireAuth } from '@/lib/supabase/require-auth'
 import { notFound, redirect } from 'next/navigation'
 import { DailyEntryForm } from '@/components/challenges/daily-entry-form'
-import { getTodayUTC } from '@/lib/utils/dates'
+import { getTodayUTC, getYesterdayUTC } from '@/lib/utils/dates'
 import { Flame } from 'lucide-react'
 import { addDays, format, parseISO, isBefore } from 'date-fns'
 
@@ -19,6 +19,7 @@ export default async function EntryPage(props: PageProps<'/challenges/[id]/entry
   const { supabase, user } = await requireAuth()
 
   const today = getTodayUTC()
+  const yesterday = getYesterdayUTC()
 
   const challengeQuery = await supabase
     .from('challenges')
@@ -31,7 +32,7 @@ export default async function EntryPage(props: PageProps<'/challenges/[id]/entry
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const challenge = (challengeQuery as any).data as ChallengeWithFields
 
-  const [participationRes, existingEntryRes, quotesRes, goalsRes, pastEntriesRes] = await Promise.all([
+  const [participationRes, existingEntryRes, quotesRes, goalsRes, pastEntriesRes, yesterdayEntryRes, todaySubmittersRes] = await Promise.all([
     supabase.from('challenge_participants').select('id').eq('challenge_id', id).eq('user_id', user.id).single(),
     supabase.from('daily_entries').select('id').eq('challenge_id', id).eq('user_id', user.id).eq('entry_date', today).single(),
     supabase.from('motivational_quotes').select('id, text, author, context'),
@@ -43,16 +44,20 @@ export default async function EntryPage(props: PageProps<'/challenges/[id]/entry
       .eq('user_id', user.id)
       .lt('entry_date', today)
       .order('entry_date'),
+    supabase.from('daily_entries').select('id').eq('challenge_id', id).eq('user_id', user.id).eq('entry_date', yesterday).single(),
+    supabase.from('daily_entries').select('user_id, profiles(username)').eq('challenge_id', id).eq('entry_date', today),
   ])
 
   if (!participationRes.data) redirect(`/challenges/${id}`)
 
   const fields = challenge.challenge_fields.sort((a, b) => a.order - b.order)
 
-  let existingValues: Array<{
+  type EntryValue = {
     field_id: string; value_text: string | null; value_number: number | null;
     value_date: string | null; value_file_url: string | null
-  }> = []
+  }
+
+  let existingValues: EntryValue[] = []
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const existingEntry = (existingEntryRes as any).data as { id: string } | null
@@ -64,6 +69,22 @@ export default async function EntryPage(props: PageProps<'/challenges/[id]/entry
       .eq('entry_id', existingEntry.id)
     existingValues = (values ?? []) as typeof existingValues
   }
+
+  // Fetch yesterday's entry values for quick-fill
+  let yesterdayValues: EntryValue[] = []
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const yesterdayEntry = (yesterdayEntryRes as any).data as { id: string } | null
+  if (yesterdayEntry) {
+    const { data: yValues } = await supabase
+      .from('entry_values')
+      .select('field_id, value_text, value_number, value_date, value_file_url')
+      .eq('entry_id', yesterdayEntry.id)
+    yesterdayValues = (yValues ?? []) as typeof yesterdayValues
+  }
+
+  // Today's submitters
+  type Submitter = { user_id: string; profiles: { username: string } | null }
+  const todaySubmitters = (todaySubmittersRes.data ?? []) as unknown as Submitter[]
 
   // Compute goals and carry-over per numeric field
   type GoalRow = { field_id: string; goal_date: string; target_value: number }
@@ -108,6 +129,14 @@ export default async function EntryPage(props: PageProps<'/challenges/[id]/entry
         <p className="text-text-muted text-sm mt-2">
           {existingValues.length > 0 ? 'Modifie ta saisie du jour' : 'Remplis tes donnees et valide. 30 secondes top chrono.'}
         </p>
+      </div>
+
+      <div className="text-center text-sm text-text-muted">
+        {todaySubmitters.length > 0 ? (
+          <span><span className="text-accent-green font-bold">{todaySubmitters.length}</span> participant{todaySubmitters.length > 1 ? 's' : ''} ont deja saisi aujourd'hui</span>
+        ) : (
+          <span>Sois le premier a saisir aujourd'hui !</span>
+        )}
       </div>
 
       <DailyEntryForm

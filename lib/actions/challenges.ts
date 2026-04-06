@@ -107,3 +107,53 @@ export async function deleteChallenge(challengeId: string) {
   refresh()
   return { success: true }
 }
+
+export async function duplicateChallenge(challengeId: string) {
+  const { supabase, user, error: authError } = await requireAuthAction()
+  if (authError) return { error: authError }
+  if (!supabase || !user) return { error: 'Non authentifie' }
+
+  // Fetch original
+  const { data: original } = await supabase
+    .from('challenges')
+    .select('title, description, duration_days, upload_config, challenge_fields(*)')
+    .eq('id', challengeId)
+    .single()
+
+  if (!original) return { error: 'Defi introuvable' }
+
+  const { createAdminClient } = await import('@/lib/supabase/admin')
+  const admin = createAdminClient()
+
+  const today = new Date().toISOString().slice(0, 10)
+  const endDate = format(addDays(new Date(today), (original as any).duration_days), 'yyyy-MM-dd')
+
+  const { data: newChallenge, error } = await admin
+    .from('challenges')
+    .insert({
+      title: `Copie de ${(original as any).title}`,
+      description: (original as any).description,
+      start_date: today,
+      end_date: endDate,
+      duration_days: (original as any).duration_days,
+      created_by: user.id,
+      status: 'draft',
+      cover_image_url: null,
+      upload_config: (original as any).upload_config ?? null,
+    } as any)
+    .select('id')
+    .single()
+
+  if (error || !newChallenge) return { error: `Erreur: ${error?.message ?? 'inconnue'}` }
+
+  // Clone fields
+  const fields = ((original as any).challenge_fields ?? []) as Array<{ name: string; label: string; type: string; required: boolean; order: number; config: any }>
+  if (fields.length > 0) {
+    await admin.from('challenge_fields').insert(
+      fields.map(f => ({ name: f.name, label: f.label, type: f.type, required: f.required, order: f.order, config: f.config, challenge_id: (newChallenge as any).id })) as any
+    )
+  }
+
+  refresh()
+  return { success: true, challengeId: (newChallenge as any).id }
+}

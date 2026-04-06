@@ -1,6 +1,11 @@
 import { requireAdmin } from '@/lib/supabase/require-auth'
 import { Card, CardContent } from '@/components/ui/card'
-import { MessageSquareQuote, Flame, Trophy, TrendingUp, Check, AlertTriangle } from 'lucide-react'
+import { Textarea } from '@/components/ui/textarea'
+import { Input } from '@/components/ui/input'
+import { Select } from '@/components/ui/select'
+import { Button } from '@/components/ui/button'
+import { MessageSquareQuote, Flame, Trophy, TrendingUp, Check, AlertTriangle, Plus, Trash2 } from 'lucide-react'
+import { createQuote, deleteQuote } from '@/lib/actions/admin-quotes'
 
 const contextConfig: Record<string, { label: string; icon: React.ElementType; color: string; bg: string }> = {
   daily: { label: 'Quotidiennes', icon: MessageSquareQuote, color: 'text-accent-green', bg: 'bg-accent-green/10' },

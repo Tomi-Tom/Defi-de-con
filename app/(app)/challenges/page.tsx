@@ -28,10 +28,18 @@ export default async function ChallengesPage(props: PageProps<'/challenges'>) {
 
   const challenges = (challengesRaw ?? []) as unknown as ChallengeWithCount[]
 
+  const { data: upcomingRaw } = await supabase
+    .from('challenges')
+    .select('id, title, description, start_date, duration_days, challenge_participants(count)')
+    .eq('status', 'draft')
+    .order('start_date', { ascending: true })
+  const upcoming = (upcomingRaw ?? []) as unknown as ChallengeWithCount[]
+
   // Get counts for tabs
-  const [activeCount, completedCount] = await Promise.all([
+  const [activeCount, completedCount, upcomingCount] = await Promise.all([
     supabase.from('challenges').select('*', { count: 'exact', head: true }).eq('status', 'active'),
     supabase.from('challenges').select('*', { count: 'exact', head: true }).eq('status', 'completed'),
+    supabase.from('challenges').select('*', { count: 'exact', head: true }).eq('status', 'draft'),
   ])
 
   return (
@@ -49,6 +57,7 @@ export default async function ChallengesPage(props: PageProps<'/challenges'>) {
         {[
           { key: 'active', label: 'En cours', icon: Flame, count: activeCount.count ?? 0 },
           { key: 'completed', label: 'Termines', icon: Trophy, count: completedCount.count ?? 0 },
+          { key: 'upcoming', label: 'Bientot', icon: Clock, count: upcomingCount.count ?? 0 },
         ].map((t) => (
           <a
             key={t.key}
@@ -68,7 +77,41 @@ export default async function ChallengesPage(props: PageProps<'/challenges'>) {
       </div>
 
       {/* Challenge grid */}
-      {challenges.length > 0 ? (
+      {tab === 'upcoming' ? (
+        upcoming.length > 0 ? (
+          <div className="grid gap-5 md:grid-cols-2">
+            {upcoming.map((c, i) => {
+              const daysUntil = differenceInDays(parseISO(c.start_date), new Date())
+              return (
+                <div key={c.id} className={`animate-slide-up stagger-${Math.min(i + 1, 5)}`}>
+                  <div className="bg-bg-secondary rounded-2xl border border-border p-5 space-y-3 hover:border-accent-green/20 transition-all duration-200">
+                    <div className="flex items-start justify-between gap-3">
+                      <h3 className="text-lg font-black text-white">{c.title}</h3>
+                      <span className="flex items-center gap-1.5 shrink-0 text-xs font-bold text-accent-green">
+                        <span className="w-2 h-2 rounded-full bg-accent-green animate-pulse" />
+                        Lance dans {daysUntil > 0 ? `${daysUntil} jour${daysUntil > 1 ? 's' : ''}` : 'bientot'}
+                      </span>
+                    </div>
+                    {c.description && (
+                      <p className="text-sm text-text-muted line-clamp-2">{c.description}</p>
+                    )}
+                    <div className="flex items-center gap-1 text-xs text-text-muted">
+                      <Clock size={12} />
+                      <span>{c.challenge_participants[0]?.count ?? 0} participant{(c.challenge_participants[0]?.count ?? 0) > 1 ? 's' : ''}</span>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        ) : (
+          <EmptyState
+            icon={<Clock size={56} />}
+            title="Aucun defi a venir"
+            description="Les prochains defis seront annonces bientot."
+          />
+        )
+      ) : challenges.length > 0 ? (
         <div className="grid gap-5 md:grid-cols-2">
           {challenges.map((c, i) => {
             const elapsed = differenceInDays(new Date(), parseISO(c.start_date)) + 1
