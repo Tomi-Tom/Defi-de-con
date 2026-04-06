@@ -21,11 +21,16 @@ export function MobileNav() {
           <Link
             key={item.href}
             href={item.href}
-            className={`flex flex-col items-center gap-0.5 py-1 px-3 text-xs font-semibold
+            className={`flex flex-col items-center gap-0.5 py-1 px-3 text-xs font-semibold transition-all duration-200
               ${isActive ? 'text-accent-green' : 'text-text-muted'}`}
           >
             <item.icon size={20} />
             {item.label}
+            {isActive ? (
+              <span className="w-1 h-1 rounded-full bg-accent-green" />
+            ) : (
+              <span className="w-1 h-1 rounded-full bg-transparent" />
+            )}
           </Link>
         )
       })}

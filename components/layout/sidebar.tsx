@@ -28,10 +28,10 @@ export function Sidebar({ isAdmin }: { isAdmin: boolean }) {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-[10px] mb-1 text-sm font-semibold transition-colors
+              className={`flex items-center gap-3 py-2.5 rounded-[10px] mb-1 text-sm font-semibold transition-all duration-200
                 ${isActive
-                  ? 'bg-accent-green/10 text-accent-green'
-                  : 'text-text-muted hover:text-white hover:bg-bg-tertiary'
+                  ? 'bg-accent-green/10 text-accent-green border-l-2 border-accent-green pl-4 pr-3'
+                  : 'text-text-muted hover:text-white hover:bg-bg-tertiary px-3 border-l-2 border-transparent'
                 }`}
             >
               <item.icon size={20} />
@@ -43,10 +43,10 @@ export function Sidebar({ isAdmin }: { isAdmin: boolean }) {
         {isAdmin && (
           <Link
             href="/admin"
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-[10px] mb-1 text-sm font-semibold transition-colors
+            className={`flex items-center gap-3 py-2.5 rounded-[10px] mb-1 text-sm font-semibold transition-all duration-200
               ${pathname.startsWith('/admin')
-                ? 'bg-accent-orange/10 text-accent-orange'
-                : 'text-text-muted hover:text-white hover:bg-bg-tertiary'
+                ? 'bg-accent-orange/10 text-accent-orange border-l-2 border-accent-orange pl-4 pr-3'
+                : 'text-text-muted hover:text-white hover:bg-bg-tertiary px-3 border-l-2 border-transparent'
               }`}
           >
             <Shield size={20} />

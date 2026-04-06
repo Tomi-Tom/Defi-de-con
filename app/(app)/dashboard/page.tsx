@@ -80,18 +80,20 @@ export default async function DashboardPage() {
   const dailyQuote = selectDailyQuote(quotes, user.id)
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="animate-fade-in max-w-4xl mx-auto space-y-6">
       <h2 className="text-2xl font-black">Dashboard</h2>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="animate-slide-up stagger-1 grid grid-cols-1 md:grid-cols-3 gap-4">
         <StreakWidget streak={bestStreak} />
         <PointsWidget points={profile?.points_total ?? 0} todayPoints={todayPoints} />
         <RankWidget rank={rank || 1} total={rankList.length} />
       </div>
 
-      <ActiveChallengesWidget challenges={activeChallenges} />
+      <div className="animate-slide-up stagger-2">
+        <ActiveChallengesWidget challenges={activeChallenges} />
+      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="animate-slide-up stagger-3 grid grid-cols-1 md:grid-cols-2 gap-4">
         <RecentBadgesWidget
           badges={badges
             .filter(b => b.badges)

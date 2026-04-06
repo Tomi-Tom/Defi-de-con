@@ -1,8 +1,10 @@
 import { requireAuth } from '@/lib/supabase/require-auth'
 import { notFound } from 'next/navigation'
 import { Card, CardContent } from '@/components/ui/card'
+import { EmptyState } from '@/components/ui/empty-state'
 import { format, parseISO } from 'date-fns'
 import { fr } from 'date-fns/locale'
+import { Calendar } from 'lucide-react'
 
 export default async function HistoryPage(props: PageProps<'/challenges/[id]/history'>) {
   const { id } = await props.params
@@ -29,6 +31,14 @@ export default async function HistoryPage(props: PageProps<'/challenges/[id]/his
     <div className="max-w-2xl mx-auto space-y-6">
       <h2 className="text-2xl font-black">{challenge.title}</h2>
       <p className="text-text-muted text-sm">Mon historique — {(entries ?? []).length} saisies</p>
+
+      {(entries ?? []).length === 0 && (
+        <EmptyState
+          icon={<Calendar size={48} />}
+          title="Aucune saisie pour le moment"
+          description="Commence par remplir ta premiere journee !"
+        />
+      )}
 
       <div className="space-y-3">
         {(entries ?? []).map(entry => (

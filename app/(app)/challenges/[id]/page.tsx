@@ -61,7 +61,7 @@ export default async function ChallengeDetailPage(props: PageProps<'/challenges/
   }))
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="animate-fade-in max-w-4xl mx-auto space-y-6">
       <div>
         <h2 className="text-2xl font-black mb-2">{challenge.title}</h2>
         <p className="text-text-muted">{challenge.description}</p>

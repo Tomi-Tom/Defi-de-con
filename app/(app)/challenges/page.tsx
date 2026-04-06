@@ -27,7 +27,7 @@ export default async function ChallengesPage(props: PageProps<'/challenges'>) {
   const challenges = (challengesRaw ?? []) as unknown as ChallengeWithCount[]
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="animate-fade-in max-w-4xl mx-auto space-y-6">
       <h2 className="text-2xl font-black">Defis</h2>
 
       <div className="flex gap-2">
@@ -46,16 +46,17 @@ export default async function ChallengesPage(props: PageProps<'/challenges'>) {
       {challenges.length > 0 ? (
         <div className="grid gap-4">
           {challenges.map((c) => (
-            <ChallengeCard
-              key={c.id}
-              id={c.id}
-              title={c.title}
-              description={c.description}
-              startDate={c.start_date}
-              endDate={c.end_date}
-              status={c.status}
-              participantCount={c.challenge_participants[0]?.count ?? 0}
-            />
+            <div key={c.id} className="animate-slide-up">
+              <ChallengeCard
+                id={c.id}
+                title={c.title}
+                description={c.description}
+                startDate={c.start_date}
+                endDate={c.end_date}
+                status={c.status}
+                participantCount={c.challenge_participants[0]?.count ?? 0}
+              />
+            </div>
           ))}
         </div>
       ) : (
