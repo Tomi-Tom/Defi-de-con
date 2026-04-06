@@ -5,10 +5,9 @@ import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import { updateProfile } from '@/lib/actions/profile'
 import { logout } from '@/lib/actions/auth'
+import { ProfileHero } from '@/components/profile/profile-hero'
 import { Star, Award, Trophy, Calendar, Flame, Crown, ArrowRight, Settings } from 'lucide-react'
 import Link from 'next/link'
-import { format, parseISO } from 'date-fns'
-import { fr } from 'date-fns/locale'
 
 export default async function ProfilePage() {
   const { supabase, user } = await requireAuth()
@@ -32,28 +31,15 @@ export default async function ProfilePage() {
 
   return (
     <div className="animate-fade-in max-w-3xl mx-auto space-y-6">
-      {/* Hero header */}
-      <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-bg-secondary via-bg-secondary to-bg-tertiary border border-border p-8">
-        <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-accent-green to-accent-green-dark" />
-        <div className="absolute top-0 right-0 w-48 h-48 bg-accent-green/5 rounded-full blur-3xl" />
-
-        <div className="relative flex items-center gap-6">
-          <div className="w-20 h-20 rounded-2xl bg-accent-green/20 flex items-center justify-center text-3xl font-black text-accent-green flex-shrink-0">
-            {profile.username.slice(0, 2).toUpperCase()}
-          </div>
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <h1 className="text-3xl font-black text-white">{profile.username}</h1>
-              {profile.is_admin && (
-                <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-accent-orange/10 text-accent-orange uppercase">Admin</span>
-              )}
-            </div>
-            <p className="text-text-muted text-sm">
-              Membre depuis {format(parseISO(profile.created_at), 'MMMM yyyy', { locale: fr })}
-            </p>
-          </div>
-        </div>
-      </div>
+      {/* Hero header with avatar upload */}
+      <ProfileHero
+        userId={user.id}
+        username={profile.username}
+        avatarUrl={profile.avatar_url}
+        isAdmin={profile.is_admin}
+        createdAt={profile.created_at}
+        isOwnProfile={true}
+      />
 
       {/* Stats grid */}
       <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
