@@ -7,14 +7,20 @@ export function RankWidget({ rank, total }: { rank: number; total: number }) {
   return (
     <Card>
       <CardContent className="p-4">
-        <div className="text-xs font-bold uppercase tracking-widest text-text-muted mb-1">Classement</div>
-        <div className="text-3xl font-black text-white">#{rank}</div>
-        {percentile > 0 && (
-          <div className="text-sm font-semibold text-accent-orange flex items-center gap-1 mt-1">
-            <TrendingUp size={14} />
-            Top {100 - percentile}%
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-accent-orange/10 flex items-center justify-center">
+            <TrendingUp size={20} className="text-accent-orange" />
           </div>
-        )}
+          <div>
+            <div className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Classement</div>
+            <div className="text-2xl font-black text-white">#{rank}</div>
+            {percentile > 0 && (
+              <div className="text-xs font-semibold text-accent-orange">
+                Top {100 - percentile}%
+              </div>
+            )}
+          </div>
+        </div>
       </CardContent>
     </Card>
   )
