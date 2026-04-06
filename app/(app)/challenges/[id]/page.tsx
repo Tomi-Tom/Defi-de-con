@@ -227,6 +227,9 @@ export default async function ChallengeDetailPage(props: PageProps<'/challenges/
               <ChallengeDashboardTab
                 fields={fields}
                 leaderboardEntries={leaderboardEntries}
+                goals={goals}
+                challengeStartDate={challenge.start_date}
+                durationDays={challenge.duration_days}
               />
             ),
           },

@@ -10,15 +10,29 @@ import { ActiveChallengesWidget } from '@/components/dashboard/active-challenges
 import { RecentBadgesWidget } from '@/components/dashboard/recent-badges-widget'
 import { DailyQuoteWidget } from '@/components/dashboard/daily-quote-widget'
 import { LastEntryWidget } from '@/components/dashboard/last-entry-widget'
+import { ActivityChartWidget } from '@/components/dashboard/activity-chart-widget'
+import { WeeklySummaryWidget } from '@/components/dashboard/weekly-summary-widget'
 import { Button } from '@/components/ui/button'
 import { differenceInDays, parseISO } from 'date-fns'
 
 export default async function DashboardPage() {
   const { supabase, user } = await requireAuth()
 
+  const last14Days = Array.from({ length: 14 }, (_, i) => {
+    const d = new Date()
+    d.setDate(d.getDate() - (13 - i))
+    return d.toISOString().slice(0, 10)
+  })
+
+  const thisWeekStart = new Date()
+  thisWeekStart.setDate(thisWeekStart.getDate() - thisWeekStart.getDay())
+  const lastWeekStart = new Date(thisWeekStart)
+  lastWeekStart.setDate(lastWeekStart.getDate() - 7)
+
   const [
     profileRes, participationsRes, rankRes, badgesRes, quotesRes,
-    todayPointsRes, totalEntriesRes, lastEntryRes, pointsLogRes
+    todayPointsRes, totalEntriesRes, lastEntryRes, pointsLogRes,
+    last14EntriesRes, weeklyPointsRes
   ] = await Promise.all([
     supabase.from('profiles').select('points_total, username').eq('id', user.id).single(),
     supabase
@@ -53,6 +67,17 @@ export default async function DashboardPage() {
       .from('points_log')
       .select('points, action')
       .eq('user_id', user.id),
+    supabase
+      .from('daily_entries')
+      .select('entry_date')
+      .eq('user_id', user.id)
+      .gte('entry_date', last14Days[0])
+      .order('entry_date'),
+    supabase
+      .from('points_log')
+      .select('points, created_at')
+      .eq('user_id', user.id)
+      .gte('created_at', lastWeekStart.toISOString().slice(0, 10)),
   ])
 
   const profile = profileRes.data as unknown as { points_total: number; username: string } | null
@@ -82,12 +107,34 @@ export default async function DashboardPage() {
     }>
   } | null
   const allPointsLog = (pointsLogRes.data ?? []) as unknown as Array<{ points: number; action: string }>
+  const last14Entries = (last14EntriesRes.data ?? []) as unknown as Array<{ entry_date: string }>
+  const weeklyPointsLog = (weeklyPointsRes.data ?? []) as unknown as Array<{ points: number; created_at: string }>
 
   const rank = rankList.findIndex(p => p.id === user.id) + 1
   const todayPoints = todayPointsData.reduce((sum, p) => sum + p.points, 0)
   const bestStreak = participations.reduce((max, p) => Math.max(max, p.current_streak), 0)
   const bestStreakEver = participations.reduce((max, p) => Math.max(max, p.best_streak), 0)
   const completedChallenges = participations.filter(p => p.challenges?.status === 'completed').length
+
+  // Activity chart data: count entries per day for last 14 days
+  const entriesCountByDate = last14Entries.reduce<Record<string, number>>((acc, e) => {
+    acc[e.entry_date] = (acc[e.entry_date] ?? 0) + 1
+    return acc
+  }, {})
+  const activityData = last14Days.map(date => ({
+    date,
+    entries: entriesCountByDate[date] ?? 0,
+    points: 0,
+  }))
+
+  // Weekly summary
+  const thisWeekStartStr = thisWeekStart.toISOString().slice(0, 10)
+  const lastWeekStartStr = lastWeekStart.toISOString().slice(0, 10)
+  const thisWeekEntryCount = last14Entries.filter(e => e.entry_date >= thisWeekStartStr).length
+  const lastWeekEntryCount = last14Entries.filter(e => e.entry_date >= lastWeekStartStr && e.entry_date < thisWeekStartStr).length
+  const thisWeekPointsTotal = weeklyPointsLog
+    .filter(p => p.created_at.slice(0, 10) >= thisWeekStartStr)
+    .reduce((sum, p) => sum + p.points, 0)
 
   // Points breakdown
   const breakdown = allPointsLog.reduce(
@@ -198,14 +245,25 @@ export default async function DashboardPage() {
         />
       </div>
 
+      {/* Activity & Weekly Summary */}
+      <div className="animate-slide-up stagger-3 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <ActivityChartWidget data={activityData} />
+        <WeeklySummaryWidget
+          thisWeekEntries={thisWeekEntryCount}
+          lastWeekEntries={lastWeekEntryCount}
+          thisWeekPoints={thisWeekPointsTotal}
+          activeChallengesCount={sortedChallenges.length}
+        />
+      </div>
+
       {/* Active challenges */}
-      <div className="animate-slide-up stagger-3">
+      <div className="animate-slide-up stagger-4">
         <ActiveChallengesWidget challenges={sortedChallenges} />
       </div>
 
       {/* Last entry */}
       {lastEntryRaw && lastEntryRaw.challenges && (
-        <div className="animate-slide-up stagger-4">
+        <div className="animate-slide-up stagger-5">
           <LastEntryWidget
             challengeId={lastEntryRaw.challenge_id}
             challengeTitle={lastEntryRaw.challenges.title}
@@ -216,7 +274,7 @@ export default async function DashboardPage() {
       )}
 
       {/* Badges + Quote */}
-      <div className="animate-slide-up stagger-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="animate-slide-up stagger-6 grid grid-cols-1 md:grid-cols-2 gap-4">
         <RecentBadgesWidget
           badges={badges
             .filter(b => b.badges)

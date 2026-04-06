@@ -1,6 +1,9 @@
+'use client'
+
 import { Card, CardContent } from '@/components/ui/card'
 import { Leaderboard } from '@/components/challenges/leaderboard'
 import { Target } from 'lucide-react'
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 
 interface FieldDef {
   id: string
@@ -21,9 +24,21 @@ interface LeaderboardEntry {
 interface ChallengeDashboardTabProps {
   fields: FieldDef[]
   leaderboardEntries: LeaderboardEntry[]
+  goals?: Array<{ field_id: string; goal_date: string; target_value: number }>
+  challengeStartDate?: string
+  durationDays?: number
 }
 
-export function ChallengeDashboardTab({ fields, leaderboardEntries }: ChallengeDashboardTabProps) {
+export function ChallengeDashboardTab({ fields, leaderboardEntries, goals, challengeStartDate, durationDays }: ChallengeDashboardTabProps) {
+  const numericFields = fields.filter(f => f.type === 'number')
+  const goalsByField = new Map<string, Array<{ date: string; target: number }>>()
+  for (const g of (goals ?? [])) {
+    if (!goalsByField.has(g.field_id)) goalsByField.set(g.field_id, [])
+    goalsByField.get(g.field_id)!.push({ date: g.goal_date, target: g.target_value })
+  }
+
+  const hasGoals = (goals ?? []).length > 0
+
   return (
     <div className="space-y-6">
       {/* Challenge fields as tags */}
@@ -44,6 +59,36 @@ export function ChallengeDashboardTab({ fields, leaderboardEntries }: ChallengeD
             ))}
         </div>
       </div>
+
+      {/* Goals section */}
+      {hasGoals && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-black uppercase tracking-widest text-text-muted">Objectifs</h3>
+            <span className="text-xs text-text-muted font-medium">
+              {goals!.length} objectif{goals!.length > 1 ? 's' : ''} defini{goals!.length > 1 ? 's' : ''}{durationDays ? ` sur ${durationDays} jours` : ''}
+            </span>
+          </div>
+          {numericFields
+            .filter(f => goalsByField.has(f.id))
+            .map(field => {
+              const fieldGoals = goalsByField.get(field.id)!.sort((a, b) => a.date.localeCompare(b.date))
+              return (
+                <div key={field.id} className="bg-bg-secondary/80 backdrop-blur-sm rounded-2xl border border-border p-5">
+                  <p className="text-xs font-black uppercase tracking-[0.15em] text-text-muted mb-3">{field.label} — Objectifs</p>
+                  <ResponsiveContainer width="100%" height={160}>
+                    <BarChart data={fieldGoals}>
+                      <XAxis dataKey="date" tick={{ fill: '#666', fontSize: 9 }} tickFormatter={(v: string) => v.slice(5)} />
+                      <YAxis tick={{ fill: '#666', fontSize: 9 }} width={35} />
+                      <Tooltip contentStyle={{ background: '#141414', border: '1px solid #222', borderRadius: 12, color: '#fff', fontSize: 12 }} />
+                      <Bar dataKey="target" fill="#ff6b00" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              )
+            })}
+        </div>
+      )}
 
       {/* Leaderboard */}
       <Leaderboard entries={leaderboardEntries} />
