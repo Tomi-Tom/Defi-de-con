@@ -1,6 +1,7 @@
 export const POINTS = {
   DAILY_ENTRY: 10,
-  FIRST_ENTRY: 5,
+  STREAK_DAILY_BONUS: 1,  // +1 per entry when streak >= 3 days
+  FIRST_ENTRY: 5,         // deprecated — kept for type compat
   STREAK_3: 15,
   STREAK_7: 30,
   STREAK_14: 50,

@@ -1,9 +1,11 @@
+import { Suspense } from 'react'
 import { requireAuth } from '@/lib/supabase/require-auth'
 import { notFound } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { ChallengeTabs } from '@/components/challenges/challenge-tabs'
 import { ChallengeDashboardTab } from '@/components/challenges/challenge-dashboard-tab'
 import { ChallengeJournal } from '@/components/challenges/challenge-journal'
+import { EntryRecapPopup } from '@/components/challenges/entry-recap-popup'
 import { joinChallenge, leaveChallenge } from '@/lib/actions/participants'
 import { differenceInDays, parseISO, format } from 'date-fns'
 import { fr } from 'date-fns/locale'
@@ -96,6 +98,11 @@ export default async function ChallengeDetailPage(props: PageProps<'/challenges/
 
   return (
     <div className="animate-fade-in max-w-4xl mx-auto space-y-8">
+      {/* Entry recap popup */}
+      <Suspense fallback={null}>
+        <EntryRecapPopup />
+      </Suspense>
+
       {/* Hero banner */}
       <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-bg-secondary via-bg-secondary to-bg-tertiary border border-border p-8">
         <div className={`absolute top-0 left-0 right-0 h-1.5 ${isActive ? 'bg-gradient-to-r from-accent-green to-accent-green-dark' : 'bg-gradient-to-r from-accent-orange to-yellow-500'}`} />

@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useForm } from 'react-hook-form'
+import { useRouter } from 'next/navigation'
 import { submitEntry, type EntryResult } from '@/lib/actions/entries'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -48,6 +49,7 @@ export function DailyEntryForm({ challengeId, fields, existingValues = [], yeste
   const [isPending, startTransition] = useTransition()
   const { register, handleSubmit, setValue } = useForm()
   const [durationValues, setDurationValues] = useState<Record<string, number>>({})
+  const router = useRouter()
 
   const getExistingValue = (fieldId: string) =>
     existingValues.find(v => v.field_id === fieldId)
@@ -75,59 +77,27 @@ export function DailyEntryForm({ challengeId, fields, existingValues = [], yeste
         return
       }
 
-      // Success feedback
-      if (result.streakMilestone) {
-        fireConfetti('milestone')
-        toast.success(`Serie de ${result.currentStreak} jours !`, {
-          description: `+${result.pointsAwarded} points`,
-          style: { background: '#0a1a0a', border: '1px solid #00ff87' },
-        })
-      } else {
-        fireConfetti('success')
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const quote = quotes.length > 0
-          ? selectContextualQuote(quotes as any, 'entry_submitted')
-          : null
-        toast.success(quote?.text ?? 'Bien joue !', {
-          description: `+${result.pointsAwarded} points`,
-          style: { background: '#0a1a0a', border: '1px solid #00ff87' },
-        })
-      }
+      // Get a motivational quote
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const quote = quotes.length > 0 ? selectContextualQuote(quotes as any, 'entry_submitted') : null
 
-      // Goal feedback
-      if (result.pointsPenalty && result.pointsPenalty < 0) {
-        setTimeout(() => {
-          toast.warning(`Objectif non atteint : ${result.pointsPenalty} points`, {
-            description: 'Rattrape ton retard demain pour un bonus !',
-            style: { background: '#1a0f0a', border: '1px solid #ff6b00' },
-          })
-        }, 800)
-      }
-      if (result.goalsCatchup) {
-        setTimeout(() => {
-          toast.success('Retard rattrape ! Bonus de rattrapage obtenu', {
-            style: { background: '#0a1a0a', border: '1px solid #00ff87' },
-          })
-        }, 800)
-      }
-      if (result.goalsPerfect) {
-        setTimeout(() => {
-          toast.success('Tous les objectifs atteints ! Bonus parfait', {
-            style: { background: '#0a1a0a', border: '1px solid #00ff87' },
-          })
-        }, 1000)
-      }
+      // Fire confetti immediately
+      fireConfetti(result.streakMilestone ? 'milestone' : 'success')
 
-      // Badge notifications
-      if (result.newBadges && result.newBadges.length > 0) {
-        for (const badge of result.newBadges) {
-          setTimeout(() => {
-            toast.success(`Badge debloque : ${badge.name}`, {
-              style: { background: '#1a1a0a', border: '1px solid #FFD700' },
-            })
-          }, 1500)
-        }
-      }
+      // Redirect to challenge page with result in URL params
+      const params = new URLSearchParams()
+      params.set('entry', 'success')
+      params.set('points', String(result.pointsAwarded ?? 0))
+      if (result.currentStreak) params.set('streak', String(result.currentStreak))
+      if (result.streakMilestone) params.set('milestone', '1')
+      if (result.pointsPenalty && result.pointsPenalty < 0) params.set('penalty', String(result.pointsPenalty))
+      if (result.goalsCatchup) params.set('catchup', '1')
+      if (result.goalsPerfect) params.set('perfect', '1')
+      if (result.isUpdate) params.set('updated', '1')
+      if (result.newBadges && result.newBadges.length > 0) params.set('badges', result.newBadges.map(b => b.name).join(','))
+      if (quote) params.set('quote', quote.text)
+
+      router.push(`/challenges/${challengeId}?${params.toString()}`)
     })
   }
 

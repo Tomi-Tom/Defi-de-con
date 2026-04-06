@@ -24,17 +24,13 @@ export async function awardPoints({ userId, challengeId, entryId, currentStreak,
   let totalAwarded = 0
   const awards: Array<{ action: string; points: number }> = []
 
-  // Daily entry points
-  awards.push({ action: 'daily_entry', points: POINTS.DAILY_ENTRY })
-  totalAwarded += POINTS.DAILY_ENTRY
+  // Daily entry points (base + streak bonus if streak >= 3)
+  const streakBonus = currentStreak >= 3 ? POINTS.STREAK_DAILY_BONUS : 0
+  const dailyTotal = POINTS.DAILY_ENTRY + streakBonus
+  awards.push({ action: 'daily_entry', points: dailyTotal })
+  totalAwarded += dailyTotal
 
-  // First entry bonus
-  if (isFirstEntry) {
-    awards.push({ action: 'first_entry', points: POINTS.FIRST_ENTRY })
-    totalAwarded += POINTS.FIRST_ENTRY
-  }
-
-  // Streak bonuses
+  // Streak milestone bonuses
   for (const milestone of STREAK_MILESTONES) {
     if (currentStreak === milestone.days) {
       const { data: existing } = await admin
