@@ -1,5 +1,5 @@
--- Enable UUID extension
-create extension if not exists "uuid-ossp";
+-- Enable pgcrypto for gen_random_uuid()
+create extension if not exists "pgcrypto";
 
 -- ============================================
 -- updated_at trigger function
@@ -58,7 +58,7 @@ create policy "Users can update own profile except is_admin"
 -- challenges
 -- ============================================
 create table challenges (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   title text not null,
   description text not null default '',
   start_date date not null,
@@ -100,7 +100,7 @@ create policy "Admins can delete challenges"
 -- challenge_fields
 -- ============================================
 create table challenge_fields (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   challenge_id uuid references challenges(id) on delete cascade not null,
   name text not null,
   label text not null,
@@ -135,7 +135,7 @@ create policy "Admins can delete challenge fields"
 -- challenge_participants
 -- ============================================
 create table challenge_participants (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   challenge_id uuid references challenges(id) on delete cascade not null,
   user_id uuid references profiles(id) on delete cascade not null,
   joined_at timestamptz not null default now(),
@@ -163,7 +163,7 @@ create policy "Users can leave challenges"
 -- daily_entries
 -- ============================================
 create table daily_entries (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   challenge_id uuid references challenges(id) on delete cascade not null,
   user_id uuid references profiles(id) on delete cascade not null,
   entry_date date not null,
@@ -200,7 +200,7 @@ create policy "Admins can delete entries"
 -- entry_values
 -- ============================================
 create table entry_values (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   entry_id uuid references daily_entries(id) on delete cascade not null,
   field_id uuid references challenge_fields(id) on delete cascade not null,
   value_text text,
@@ -246,7 +246,7 @@ create policy "Admins can delete entry values"
 -- badges
 -- ============================================
 create table badges (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   name text not null,
   description text not null default '',
   icon_url text not null default '/badges/default.svg',
@@ -278,13 +278,15 @@ create policy "Admins can delete badges"
 -- user_badges
 -- ============================================
 create table user_badges (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   user_id uuid references profiles(id) on delete cascade not null,
   badge_id uuid references badges(id) on delete cascade not null,
   challenge_id uuid references challenges(id) on delete set null,
-  earned_at timestamptz not null default now(),
-  unique (user_id, badge_id, coalesce(challenge_id, '00000000-0000-0000-0000-000000000000'))
+  earned_at timestamptz not null default now()
 );
+
+create unique index idx_user_badges_unique
+  on user_badges (user_id, badge_id, coalesce(challenge_id, '00000000-0000-0000-0000-000000000000'));
 
 alter table user_badges enable row level security;
 
@@ -302,7 +304,7 @@ create policy "Admins can delete user badges"
 -- points_log
 -- ============================================
 create table points_log (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   user_id uuid references profiles(id) on delete cascade not null,
   challenge_id uuid references challenges(id) on delete cascade not null,
   entry_id uuid references daily_entries(id) on delete set null,
@@ -323,7 +325,7 @@ create policy "Users can view own points log"
 -- motivational_quotes
 -- ============================================
 create table motivational_quotes (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   text text not null,
   author text,
   context text not null check (context in ('daily', 'streak_lost', 'streak_milestone', 'rank_up', 'entry_submitted'))
