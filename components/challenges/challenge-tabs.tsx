@@ -1,12 +1,11 @@
 'use client'
 
 import { useState } from 'react'
-import { LayoutDashboard, BookOpen, Users } from 'lucide-react'
+import { LayoutDashboard, BookOpen } from 'lucide-react'
 
 const iconMap: Record<string, React.ElementType> = {
   dashboard: LayoutDashboard,
   journal: BookOpen,
-  participants: Users,
 }
 
 interface Tab {

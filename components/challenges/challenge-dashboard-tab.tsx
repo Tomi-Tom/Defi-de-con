@@ -24,12 +24,13 @@ interface LeaderboardEntry {
 interface ChallengeDashboardTabProps {
   fields: FieldDef[]
   leaderboardEntries: LeaderboardEntry[]
+  currentUserId?: string
   goals?: Array<{ field_id: string; goal_date: string; target_value: number }>
   challengeStartDate?: string
   durationDays?: number
 }
 
-export function ChallengeDashboardTab({ fields, leaderboardEntries, goals, challengeStartDate, durationDays }: ChallengeDashboardTabProps) {
+export function ChallengeDashboardTab({ fields, leaderboardEntries, currentUserId, goals, challengeStartDate, durationDays }: ChallengeDashboardTabProps) {
   const numericFields = fields.filter(f => f.type === 'number')
   const goalsByField = new Map<string, Array<{ date: string; target: number }>>()
   for (const g of (goals ?? [])) {
@@ -91,7 +92,7 @@ export function ChallengeDashboardTab({ fields, leaderboardEntries, goals, chall
       )}
 
       {/* Leaderboard */}
-      <Leaderboard entries={leaderboardEntries} />
+      <Leaderboard entries={leaderboardEntries} currentUserId={currentUserId} />
     </div>
   )
 }

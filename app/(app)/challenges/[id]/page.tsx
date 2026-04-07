@@ -10,7 +10,6 @@ import { joinChallenge, leaveChallenge } from '@/lib/actions/participants'
 import { differenceInDays, parseISO, format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { Calendar, Users, Clock, Flame, Trophy } from 'lucide-react'
-import { UserAvatar } from '@/components/ui/user-avatar'
 import Link from 'next/link'
 
 export default async function ChallengeDetailPage(props: PageProps<'/challenges/[id]'>) {
@@ -220,6 +219,7 @@ export default async function ChallengeDetailPage(props: PageProps<'/challenges/
               <ChallengeDashboardTab
                 fields={fields}
                 leaderboardEntries={leaderboardEntries}
+                currentUserId={user.id}
                 goals={goals}
                 challengeStartDate={challenge.start_date}
                 durationDays={challenge.duration_days}
@@ -237,33 +237,6 @@ export default async function ChallengeDetailPage(props: PageProps<'/challenges/
               />
             ),
           }] : []),
-          {
-            id: 'participants',
-            label: `Participants (${participants.length})`,
-            content: (
-              <div className="space-y-2">
-                {[...participants].sort((a, b) => (a.profiles?.username ?? '').localeCompare(b.profiles?.username ?? '')).map((p) => (
-                  <Link
-                    key={p.user_id}
-                    href={`/profile/${p.user_id}`}
-                    className="flex items-center gap-3 p-3 rounded-xl bg-bg-secondary border border-border hover:border-accent-green/30 transition-all"
-                  >
-                    <UserAvatar username={p.profiles?.username ?? '??'} avatarUrl={p.profiles?.avatar_url ?? null} size="md" />
-                    <div className="flex-1">
-                      <span className="text-sm font-bold text-white">{p.profiles?.username ?? 'Inconnu'}</span>
-                      {p.user_id === user.id && (
-                        <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded bg-accent-green/10 text-accent-green font-bold">Toi</span>
-                      )}
-                    </div>
-                    {p.current_streak > 0 && (
-                      <span className="text-xs text-accent-orange font-bold">{p.current_streak}j</span>
-                    )}
-                    <span className="text-sm font-bold text-accent-green">{p.points_earned} pts</span>
-                  </Link>
-                ))}
-              </div>
-            ),
-          },
         ]}
       />
     </div>
