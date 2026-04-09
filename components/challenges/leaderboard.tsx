@@ -15,7 +15,7 @@ export function Leaderboard({ entries, currentUserId }: { entries: ParticipantEn
   const currentUser = currentUserId ? entries.find(e => e.userId === currentUserId) : null
   const others = [...entries]
     .filter(e => e.userId !== currentUserId)
-    .sort((a, b) => a.username.localeCompare(b.username))
+    .sort((a, b) => b.points - a.points)
   const sorted = currentUser ? [currentUser, ...others] : others
 
   return (
