@@ -4,34 +4,42 @@ import { useEffect, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { fireConfetti } from '@/components/ui/confetti'
-import { Star, Flame, Trophy, Target, AlertTriangle, Award, X, Sparkles } from 'lucide-react'
+import { Star, Flame, Trophy, Target, AlertTriangle, Award, X, Sparkles, TrendingUp } from 'lucide-react'
 
 export function EntryRecapPopup() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const [visible, setVisible] = useState(false)
+  const [animateTotal, setAnimateTotal] = useState(false)
 
   const isEntry = searchParams.get('entry') === 'success'
   const points = Number(searchParams.get('points') ?? 0)
+  const base = Number(searchParams.get('base') ?? 0)
   const streak = Number(searchParams.get('streak') ?? 0)
   const isMilestone = searchParams.get('milestone') === '1'
+  const streakBonus = Number(searchParams.get('streakbonus') ?? 0)
   const penalty = Number(searchParams.get('penalty') ?? 0)
-  const isCatchup = searchParams.get('catchup') === '1'
-  const isPerfect = searchParams.get('perfect') === '1'
+  const catchup = Number(searchParams.get('catchup') ?? 0)
+  const perfect = Number(searchParams.get('perfect') ?? 0)
   const isUpdated = searchParams.get('updated') === '1'
   const badges = searchParams.get('badges')?.split(',').filter(Boolean) ?? []
   const quote = searchParams.get('quote')
 
+  const hasBonusOrPenalty = streakBonus > 0 || perfect > 0 || catchup > 0 || penalty < 0
+
   useEffect(() => {
     if (isEntry) {
       setVisible(true)
+      setAnimateTotal(false)
       fireConfetti(isMilestone ? 'milestone' : 'success')
+      // Delay total animation for dramatic effect
+      const timer = setTimeout(() => setAnimateTotal(true), 400)
+      return () => clearTimeout(timer)
     }
   }, [isEntry, isMilestone])
 
   const close = () => {
     setVisible(false)
-    // Remove query params
     router.replace(window.location.pathname, { scroll: false })
   }
 
@@ -81,39 +89,70 @@ export function EntryRecapPopup() {
         )}
 
         {/* Points breakdown */}
-        <div className="bg-bg-tertiary/50 rounded-2xl p-4 mb-4 space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-text-muted flex items-center gap-1.5">
-              <Star size={14} className="text-accent-green" /> Points gagnes
-            </span>
-            <span className="text-lg font-black text-accent-green">+{points}</span>
+        <div className="bg-bg-tertiary/50 rounded-2xl p-4 mb-4">
+          <div className="space-y-1.5">
+            {/* Base points */}
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-text-muted flex items-center gap-1.5">
+                <Star size={14} className="text-accent-green" /> Validation du jour
+              </span>
+              <span className="text-sm font-bold text-text-secondary">+{base}</span>
+            </div>
+
+            {/* Streak daily bonus */}
+            {streakBonus > 0 && (
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-text-muted flex items-center gap-1.5">
+                  <Flame size={14} className="text-accent-orange" /> Bonus streak
+                </span>
+                <span className="text-sm font-bold text-text-secondary">+{streakBonus}</span>
+              </div>
+            )}
+
+            {/* Perfect day bonus */}
+            {perfect > 0 && (
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-text-muted flex items-center gap-1.5">
+                  <Sparkles size={14} className="text-yellow-400" /> Journee parfaite
+                </span>
+                <span className="text-sm font-bold text-text-secondary">+{perfect}</span>
+              </div>
+            )}
+
+            {/* Catchup bonus */}
+            {catchup > 0 && (
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-text-muted flex items-center gap-1.5">
+                  <Target size={14} className="text-accent-green" /> Rattrapage
+                </span>
+                <span className="text-sm font-bold text-text-secondary">+{catchup}</span>
+              </div>
+            )}
+
+            {/* Penalty */}
+            {penalty < 0 && (
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-text-muted flex items-center gap-1.5">
+                  <AlertTriangle size={14} className="text-red-400" /> Objectif manque
+                </span>
+                <span className="text-sm font-bold text-red-400">{penalty}</span>
+              </div>
+            )}
           </div>
 
-          {penalty < 0 && (
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-text-muted flex items-center gap-1.5">
-                <AlertTriangle size={14} className="text-accent-orange" /> Objectif manque
-              </span>
-              <span className="text-sm font-black text-accent-orange">{penalty}</span>
-            </div>
-          )}
-
-          {isCatchup && (
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-text-muted flex items-center gap-1.5">
-                <Target size={14} className="text-accent-green" /> Rattrapage
-              </span>
-              <span className="text-sm font-black text-accent-green">Bonus !</span>
-            </div>
-          )}
-
-          {isPerfect && (
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-text-muted flex items-center gap-1.5">
-                <Sparkles size={14} className="text-accent-green" /> Journee parfaite
-              </span>
-              <span className="text-sm font-black text-accent-green">+2</span>
-            </div>
+          {/* Separator + Total */}
+          {hasBonusOrPenalty && (
+            <>
+              <div className="my-3 border-t border-border/50" />
+              <div className={`flex items-center justify-between transition-all duration-500 ${animateTotal ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}>
+                <span className="text-base font-black text-white flex items-center gap-1.5">
+                  <TrendingUp size={16} className="text-accent-green" /> Total
+                </span>
+                <span className={`text-2xl font-black ${points >= 0 ? 'text-accent-green' : 'text-red-400'}`}>
+                  {points >= 0 ? '+' : ''}{points}
+                </span>
+              </div>
+            </>
           )}
         </div>
 

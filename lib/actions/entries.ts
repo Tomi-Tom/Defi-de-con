@@ -12,6 +12,10 @@ export type EntryResult = {
   success?: boolean
   error?: string
   pointsAwarded?: number
+  pointsBase?: number
+  pointsStreakBonus?: number
+  pointsCatchup?: number
+  pointsPerfect?: number
   pointsPenalty?: number
   goalsCatchup?: boolean
   goalsPerfect?: boolean
@@ -232,16 +236,24 @@ export async function submitEntry(input: SubmitEntryInput): Promise<EntryResult>
     currentStreak: newStreak,
   })
 
-  const streakMilestone = awards.some(a => a.action.startsWith('streak_'))
+  const streakMilestone = awards.some(a => a.action.startsWith('streak_') && a.action !== 'streak_daily_bonus')
   const pointsPenalty = awards.filter(a => a.points < 0).reduce((s, a) => s + a.points, 0)
-  const goalsCatchup = awards.some(a => a.action === 'goal_catchup')
-  const goalsPerfect = awards.some(a => a.action === 'goal_perfect')
+  const pointsBase = awards.find(a => a.action === 'daily_entry')?.points ?? 0
+  const pointsStreakBonus = awards.find(a => a.action === 'streak_daily_bonus')?.points ?? 0
+  const pointsCatchup = awards.find(a => a.action === 'goal_catchup')?.points ?? 0
+  const pointsPerfect = awards.find(a => a.action === 'goal_perfect')?.points ?? 0
+  const goalsCatchup = pointsCatchup > 0
+  const goalsPerfect = pointsPerfect > 0
 
   refresh()
 
   return {
     success: true,
     pointsAwarded: totalAwarded,
+    pointsBase,
+    pointsStreakBonus,
+    pointsCatchup,
+    pointsPerfect,
     pointsPenalty,
     goalsCatchup,
     goalsPerfect,
