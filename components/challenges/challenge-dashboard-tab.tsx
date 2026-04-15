@@ -3,7 +3,7 @@
 import { Card, CardContent } from '@/components/ui/card'
 import { Leaderboard } from '@/components/challenges/leaderboard'
 import { Target } from 'lucide-react'
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, LabelList, ReferenceLine } from 'recharts'
 
 interface FieldDef {
   id: string
@@ -39,6 +39,7 @@ export function ChallengeDashboardTab({ fields, leaderboardEntries, currentUserI
   }
 
   const hasGoals = (goals ?? []).length > 0
+  const today = new Date().toISOString().slice(0, 10)
 
   return (
     <div className="space-y-6">
@@ -73,16 +74,52 @@ export function ChallengeDashboardTab({ fields, leaderboardEntries, currentUserI
           {numericFields
             .filter(f => goalsByField.has(f.id))
             .map(field => {
-              const fieldGoals = goalsByField.get(field.id)!.sort((a, b) => a.date.localeCompare(b.date))
+              const fieldGoalsRaw = goalsByField.get(field.id)!.sort((a, b) => a.date.localeCompare(b.date))
+              const todayGoal = fieldGoalsRaw.find(g => g.date === today)
+              const fieldGoals = fieldGoalsRaw.map(g => ({
+                ...g,
+                todayLabel: g.date === today ? g.target : null,
+              }))
               return (
                 <div key={field.id} className="bg-bg-secondary/80 backdrop-blur-sm rounded-2xl border border-border p-5">
-                  <p className="text-xs font-black uppercase tracking-[0.15em] text-text-muted mb-3">{field.label} — Objectifs</p>
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-xs font-black uppercase tracking-[0.15em] text-text-muted">{field.label} — Objectifs</p>
+                    {todayGoal && (
+                      <span className="text-xs font-black text-accent-green px-2 py-0.5 rounded-full bg-accent-green/10 border border-accent-green/20">
+                        Aujourd&apos;hui : {todayGoal.target}
+                      </span>
+                    )}
+                  </div>
                   <ResponsiveContainer width="100%" height={160}>
                     <BarChart data={fieldGoals}>
-                      <XAxis dataKey="date" tick={{ fill: '#666', fontSize: 9 }} tickFormatter={(v: string) => v.slice(5)} />
+                      <XAxis
+                        dataKey="date"
+                        tick={({ x, y, payload }: { x: string | number; y: string | number; payload: { value: string } }) => (
+                          <text
+                            x={Number(x)} y={Number(y) + 10}
+                            textAnchor="middle"
+                            fontSize={9}
+                            fontWeight={payload.value === today ? 900 : 400}
+                            fill={payload.value === today ? '#00ff87' : '#666'}
+                          >
+                            {payload.value.slice(5)}
+                          </text>
+                        )}
+                      />
                       <YAxis tick={{ fill: '#666', fontSize: 9 }} width={35} />
                       <Tooltip contentStyle={{ background: '#141414', border: '1px solid #222', borderRadius: 12, color: '#fff', fontSize: 12 }} />
-                      <Bar dataKey="target" fill="#ff6b00" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="target" radius={[4, 4, 0, 0]}>
+                        <LabelList
+                          dataKey="todayLabel"
+                          position="top"
+                          fontSize={10}
+                          fontWeight={900}
+                          fill="#00ff87"
+                        />
+                        {fieldGoals.map((g, i) => (
+                          <Cell key={i} fill={g.date === today ? '#00ff87' : '#ff6b00'} />
+                        ))}
+                      </Bar>
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
